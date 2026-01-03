@@ -32,14 +32,14 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
               <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold mr-2">
                 F
               </div>
-              <span className="font-bold text-xl text-gray-900 brand-font tracking-tight">FGO Rating</span>
+              <span className="font-bold text-xl text-gray-900 brand-font tracking-tight">FGO Critic</span>
             </Link>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               <NavLink
                 to="/servants"
                 className={({ isActive }) => `${isActive ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium h-full transition-colors`}
               >
-                Servant List
+                Servants
               </NavLink>
               <NavLink
                 to="/rankings"
@@ -124,7 +124,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
               onClick={closeMobileMenu}
               className={({ isActive }) => `${isActive ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800'} block pl-3 pr-4 py-2 border-l-4 text-base font-medium transition-colors`}
             >
-              Servant List
+              Servants
             </NavLink>
             <NavLink
               to="/rankings"

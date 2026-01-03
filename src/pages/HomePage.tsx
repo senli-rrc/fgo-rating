@@ -13,7 +13,7 @@ interface HomePageProps {
   onRegionChange: (region: string) => void;
 }
 
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 20;
 const TABLE_ITEMS_PER_PAGE = 15;
 
 const HomePage: React.FC<HomePageProps> = ({
@@ -63,13 +63,13 @@ const HomePage: React.FC<HomePageProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2 brand-font">Spirit Origin List</h1>
-        <p className="text-gray-500">Database of Heroic Spirits recorded in Chaldea ({region} Data).</p>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2 brand-font">Servant List</h1>
+        <p className="text-gray-500">Database of Servants recorded in Chaldea ({region} Data).</p>
       </div>
 
       {servants.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-lg border border-dashed border-gray-300">
-          <p className="text-gray-500 mb-4">No Spirit Origins found.</p>
+          <p className="text-gray-500 mb-4">No data found.</p>
           <button
             onClick={onQuickImport}
             disabled={importing}

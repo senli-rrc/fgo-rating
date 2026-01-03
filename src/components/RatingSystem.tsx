@@ -14,7 +14,7 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ collectionNo, server, user,
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [userRating, setUserRating] = useState<Rating | null>(null);
   const [hoverScore, setHoverScore] = useState<number | null>(null);
-  
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
@@ -27,7 +27,7 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ collectionNo, server, user,
   const loadRatings = async () => {
     const r = await dbService.getRatingsForServant(collectionNo, server);
     setRatings(r);
-    
+
     if (user) {
         const myRating = await dbService.getUserRating(user.id, collectionNo, server);
         if (myRating) {
@@ -57,7 +57,7 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ collectionNo, server, user,
       // 1-4: Red
       return 'bg-red-500';
   };
-  
+
   const getScoreLabel = (score: number) => {
       if (score >= 9) return 'Universal Acclaim';
       if (score >= 8) return 'Generally Favorable';
@@ -74,7 +74,7 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ collectionNo, server, user,
 
       // If just setting score, save empty comment if it doesn't exist, or keep existing
       const commentToSave = userRating?.comment || '';
-      
+
       const newRating = await dbService.saveRating({
           userId: user.id,
           username: user.username,
@@ -83,16 +83,16 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ collectionNo, server, user,
           score,
           comment: commentToSave
       });
-      
+
       setUserRating(newRating);
       loadRatings(); // Reload to update average
   };
 
   const handleReviewSubmit = async () => {
       if (!user || !userRating) return; // Should have clicked score first usually, but let's handle it
-      
+
       setIsSubmitting(true);
-      
+
       // Use existing score or default to 5 if somehow editing without score
       const scoreToSave = userRating.score;
 
@@ -128,7 +128,7 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ collectionNo, server, user,
   return (
     <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
         {/* User Score Section */}
-        <div 
+        <div
             className={`flex items-center gap-3 ${onViewReviews ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
             onClick={onViewReviews}
             title={onViewReviews ? "Click to view all reviews" : undefined}
@@ -164,21 +164,21 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ collectionNo, server, user,
                      </span>
                  )}
              </div>
-             
+
              {/* Interactive Blocks */}
-             <div 
-                className="flex gap-1" 
+             <div
+                className="flex gap-1"
                 onMouseLeave={() => setHoverScore(null)}
              >
                  {[...Array(10)].map((_, i) => {
                      const scoreValue = i + 1;
                      const isActive = scoreValue <= displayScore;
-                     const colorClass = isActive 
+                     const colorClass = isActive
                         ? (displayScore >= 8 ? 'bg-green-500' : displayScore >= 5 ? 'bg-yellow-400' : 'bg-red-500')
                         : 'bg-gray-200';
-                     
+
                      return (
-                         <div 
+                         <div
                             key={i}
                             className={`w-6 h-6 md:w-8 md:h-8 rounded-sm cursor-pointer transition-colors duration-200 ${colorClass} hover:opacity-80`}
                             onMouseEnter={() => setHoverScore(scoreValue)}
@@ -187,8 +187,8 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ collectionNo, server, user,
                      );
                  })}
              </div>
-             
-             <button 
+
+             <button
                 onClick={openReviewModal}
                 className="text-xs text-blue-600 hover:text-blue-800 text-left mt-1 font-medium flex items-center"
              >

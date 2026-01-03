@@ -22,7 +22,7 @@ const RankingList: React.FC<RankingListProps> = ({ servants, onNavigateToReviews
   useEffect(() => {
     const fetchRankingData = async () => {
       setLoading(true);
-      
+
       // Filter by category
       let filtered = servants;
       if (activeCategory !== 'ALL') {
@@ -31,12 +31,12 @@ const RankingList: React.FC<RankingListProps> = ({ servants, onNavigateToReviews
 
       // Filter only rated servants for the ranking list (optional, but makes sense for "Rankings")
       // Alternatively, show all but unrated ones go to bottom. Let's show all but sort unrated last.
-      
+
       // Sort: Average Score Desc, then Rating Count Desc (we need to fetch counts effectively or rely on what App passed)
       // App passes averageScore, but not count attached to servant directly in types (it calculated it in loadServants).
-      // We need count. Let's fetch counts or just assume for now we use what we have. 
+      // We need count. Let's fetch counts or just assume for now we use what we have.
       // Ideally App should pass count in Servant extension, but let's fetch counts here to be accurate.
-      
+
       const ratings = await dbService.getAllRatings();
       const ratingMap = new Map<number, number>(); // servantId -> count
       ratings.forEach(r => {
@@ -137,7 +137,7 @@ const RankingList: React.FC<RankingListProps> = ({ servants, onNavigateToReviews
                 </div>
             ) : (
                 rankedServants.map((servant, index) => (
-                    <div 
+                    <div
                         key={servant.id}
                         onClick={() => onNavigateToReviews(servant)}
                         className="bg-white rounded-lg border border-gray-100 p-4 flex items-center gap-4 hover:shadow-lg transition-all duration-300 cursor-pointer group relative overflow-hidden"
@@ -149,9 +149,9 @@ const RankingList: React.FC<RankingListProps> = ({ servants, onNavigateToReviews
 
                         {/* Image */}
                         <div className="relative w-16 h-16 flex-shrink-0">
-                             <img 
-                                src={servant.face} 
-                                alt={servant.name} 
+                             <img
+                                src={servant.face}
+                                alt={servant.name}
                                 className="w-full h-full rounded-md object-cover border border-gray-200 group-hover:scale-105 transition-transform"
                              />
                         </div>
@@ -166,7 +166,7 @@ const RankingList: React.FC<RankingListProps> = ({ servants, onNavigateToReviews
                                     {servant.className}
                                 </span>
                             </div>
-                            
+
                             {/* Featured Comment Bubble */}
                             <div className="relative bg-orange-50 text-orange-900 text-sm px-3 py-2 rounded-r-lg rounded-bl-lg rounded-tl-none inline-block max-w-full">
                                 {servant.topComment ? (

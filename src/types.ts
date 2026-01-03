@@ -86,7 +86,7 @@ export interface Servant {
   images: string[]; // URLs to CharaGraph/Portraits
   traits: string[]; // Denormalized list of trait names
   averageScore?: number; // Calculated field for display
-  
+
   // Extended Data
   noblePhantasms?: NpModel[];
   skills?: SkillModel[];

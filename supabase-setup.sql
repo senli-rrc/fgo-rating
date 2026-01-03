@@ -344,7 +344,7 @@ BEGIN
   -- Get values
   srv := COALESCE(NEW.server, OLD.server);
   coll_no := COALESCE(NEW."collectionNo", OLD."collectionNo");
-  
+
   -- Update the appropriate servant table based on server
   IF srv = 'JP' THEN
     UPDATE public.servants_jp
@@ -371,7 +371,7 @@ BEGIN
     )
     WHERE "collectionNo" = coll_no;
   END IF;
-  
+
   RETURN COALESCE(NEW, OLD);
 END;
 $$ LANGUAGE plpgsql;

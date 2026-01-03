@@ -212,7 +212,7 @@ const App: React.FC = () => {
             } />
 
             <Route path="/rankings" element={
-              <RankingPage servants={servants} />
+              <RankingPage servants={servants} region={region} onRegionChange={handleRegionChange} />
             } />
 
             <Route path="/mainquests" element={

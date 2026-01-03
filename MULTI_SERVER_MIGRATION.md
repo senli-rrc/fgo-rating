@@ -34,7 +34,7 @@ export interface Rating {
 **Added:**
 - `getServantTable(server)` helper function to route queries to correct table
 - Server parameter to all servant methods:
-  - `getAllServants(server)` 
+  - `getAllServants(server)`
   - `saveServant(servant, server)`
   - `deleteServant(id, server)`
   - `bulkUpsert(servants, server)`
@@ -65,7 +65,7 @@ export interface Rating {
 - Passes `collectionNo` and `server` to `<RatingSystem>`
 
 **ReviewsPage:**
-- Added `region` prop  
+- Added `region` prop
 - Calls `getRatingsForServant(collectionNo, region)`
 - Passes `collectionNo` and `server` to `<RatingSystem>`
 
@@ -92,15 +92,15 @@ Created comprehensive migration script to:
 ## User Experience Changes
 
 ### Before:
-❌ Clicking JP/CN/EN triggered heavy data download and import for all users  
-❌ Ratings were shared across all servers (mixing JP/CN/EN data)  
-❌ No way to keep separate servant data per region  
+❌ Clicking JP/CN/EN triggered heavy data download and import for all users
+❌ Ratings were shared across all servers (mixing JP/CN/EN data)
+❌ No way to keep separate servant data per region
 
 ### After:
-✅ Clicking JP/CN/EN instantly switches view (lightweight operation)  
-✅ Ratings are server-specific (JP Artoria ≠ CN Artoria ratings)  
-✅ Data import is admin-only privilege  
-✅ Users can rate same servant on different servers  
+✅ Clicking JP/CN/EN instantly switches view (lightweight operation)
+✅ Ratings are server-specific (JP Artoria ≠ CN Artoria ratings)
+✅ Data import is admin-only privilege
+✅ Users can rate same servant on different servers
 
 ## Migration Steps
 

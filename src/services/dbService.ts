@@ -557,7 +557,7 @@ export const dbService = {
         score: rating.score,
         comment: rating.comment
       }, {
-        onConflict: 'userId,collectionNo,server' // Updated to match new unique constraint
+        onConflict: 'user_id,collection_no,server' // Match database column names (snake_case)
       })
       .select(`
         *,

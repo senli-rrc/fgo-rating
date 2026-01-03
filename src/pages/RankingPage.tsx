@@ -6,6 +6,8 @@ import { dbService } from '../services/dbService';
 
 interface RankingPageProps {
     servants: Servant[];
+    region: string;
+    onRegionChange: (region: string) => void;
 }
 
 interface RankedServant extends Servant {
@@ -13,7 +15,7 @@ interface RankedServant extends Servant {
     ratingCount: number;
 }
 
-const RankingPage: React.FC<RankingPageProps> = ({ servants }) => {
+const RankingPage: React.FC<RankingPageProps> = ({ servants, region, onRegionChange }) => {
     const [activeCategory, setActiveCategory] = useState<number | 'ALL'>('ALL');
     const [rankedServants, setRankedServants] = useState<RankedServant[]>([]);
     const [loading, setLoading] = useState(false);
@@ -28,7 +30,7 @@ const RankingPage: React.FC<RankingPageProps> = ({ servants }) => {
                 filtered = servants.filter(s => s.classId === activeCategory);
             }
 
-            const ratings = await dbService.getAllRatings();
+            const ratings = await dbService.getAllRatings(region);
             const ratingMap = new Map<number, number>(); // collectionNo -> count
             ratings.forEach(r => {
                 ratingMap.set(r.collectionNo, (ratingMap.get(r.collectionNo) || 0) + 1);
@@ -52,7 +54,7 @@ const RankingPage: React.FC<RankingPageProps> = ({ servants }) => {
 
             // Fetch top comments for these top servants
             const promises = topServants.map(async (s) => {
-                const topRating = await dbService.getTopReviewForServant(s.collectionNo, 'JP');
+                const topRating = await dbService.getTopReviewForServant(s.collectionNo, region);
                 return {
                     ...s,
                     topComment: topRating?.comment
@@ -65,7 +67,7 @@ const RankingPage: React.FC<RankingPageProps> = ({ servants }) => {
         };
 
         fetchRankingData();
-    }, [servants, activeCategory]);
+    }, [servants, activeCategory, region]);
 
     const getRankColor = (index: number) => {
         if (index === 0) return 'text-red-600';
@@ -82,9 +84,20 @@ const RankingPage: React.FC<RankingPageProps> = ({ servants }) => {
 
     return (
         <div className="max-w-5xl mx-auto px-4 py-8 animate-fade-in">
-            <div className="flex items-center gap-2 mb-6">
-                <h1 className="text-3xl font-bold text-gray-900 brand-font">Servant Rankings</h1>
-                <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">LIVE</span>
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                    <h1 className="text-3xl font-bold text-gray-900 brand-font">Servant Rankings</h1>
+                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">LIVE</span>
+                </div>
+                <select
+                    value={region}
+                    onChange={(e) => onRegionChange(e.target.value)}
+                    className="px-4 py-2 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    <option value="JP">🇯🇵 JP Server</option>
+                    <option value="CN">🇨🇳 CN Server</option>
+                    <option value="EN">🇺🇸 EN Server</option>
+                </select>
             </div>
 
             {/* Category Tabs (Scrollable) */}

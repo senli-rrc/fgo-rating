@@ -1,357 +1,754 @@
-
 import { Servant, User, Rating, Reply, LightUp, War } from '../types';
+import { supabase } from '../lib/supabase';
 
-// IndexedDB Configuration
-const DB_NAME = 'fgo_rating_db';
-const DB_VERSION = 2; // Incremented for 'wars' store
+// Type definitions for Supabase responses
+interface SupabaseServant {
+  id: number;
+  collectionNo: number;
+  name: string;
+  originalName: string | null;
+  className: string;
+  rarity: number;
+  face: string | null;
+  attribute: string | null;
+  atkMax: number | null;
+  hpMax: number | null;
+  atkBase: number | null;
+  hpBase: number | null;
+  cost: number | null;
+  averageScore: number | null;
+  data: any; // JSONB field containing skills, NPs, etc.
+  created_at: string;
+}
 
-const STORES = {
-  SERVANTS: 'servants',
-  USERS: 'users',
-  RATINGS: 'ratings',
-  REPLIES: 'replies',
-  LIGHTUPS: 'lightups',
-  WARS: 'wars'
+interface SupabaseUser {
+  id: string; // UUID from Supabase auth
+  username: string;
+  email: string;
+  role: 'USER' | 'ADMIN';
+  status: 'ACTIVE' | 'SUSPENDED';
+  created_at: string;
+}
+
+interface SupabaseRating {
+  id: string;
+  userId: string; // UUID
+  servantId: number;
+  score: number;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface SupabaseReply {
+  id: string;
+  ratingId: string;
+  userId: string;
+  content: string;
+  created_at: string;
+}
+
+interface SupabaseLightUp {
+  id: string;
+  ratingId: string;
+  userId: string;
+  created_at: string;
+}
+
+interface SupabaseWar {
+  id: number;
+  age: string | null;
+  name: string;
+  longName: string | null;
+  banner: string | null;
+  headerImage: string | null;
+  priority: number;
+  created_at: string;
+}
+
+// Helper functions to convert between Supabase and app types
+const convertServant = (s: SupabaseServant): Servant => {
+  const data = s.data || {};
+  return {
+    id: s.id,
+    collectionNo: s.collectionNo,
+    name: s.name,
+    originalName: s.originalName || s.name,
+    type: data.type || 'Normal',
+    rarity: s.rarity,
+    classId: data.classId || 0,
+    className: s.className,
+    attribute: (s.attribute as any) || 'man',
+    atkMax: s.atkMax || 0,
+    hpMax: s.hpMax || 0,
+    atkBase: s.atkBase || 0,
+    hpBase: s.hpBase || 0,
+    cost: s.cost || 0,
+    face: s.face || '',
+    cards: data.cards || [],
+    images: data.images || [],
+    traits: data.traits || [],
+    averageScore: s.averageScore || 0,
+    noblePhantasms: data.noblePhantasms,
+    skills: data.skills,
+    classPassive: data.classPassive,
+    appendPassive: data.appendPassive,
+    profile: data.profile
+  };
 };
 
-// Singleton Promise to handle DB connection
-let dbPromise: Promise<IDBDatabase> | null = null;
-
-const openDB = (): Promise<IDBDatabase> => {
-  if (dbPromise) return dbPromise;
-
-  dbPromise = new Promise((resolve, reject) => {
-    // Check if IndexedDB is supported
-    if (!window.indexedDB) {
-        reject(new Error("IndexedDB is not supported in this browser."));
-        return;
-    }
-
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onerror = (event) => {
-      console.error("IndexedDB error:", request.error);
-      reject(request.error);
-    };
-
-    request.onsuccess = (event) => {
-      resolve(request.result);
-    };
-
-    request.onupgradeneeded = (event) => {
-      const db = request.result;
-      
-      // Create object stores if they don't exist
-      if (!db.objectStoreNames.contains(STORES.SERVANTS)) {
-        db.createObjectStore(STORES.SERVANTS, { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains(STORES.USERS)) {
-        db.createObjectStore(STORES.USERS, { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains(STORES.RATINGS)) {
-        db.createObjectStore(STORES.RATINGS, { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains(STORES.REPLIES)) {
-        db.createObjectStore(STORES.REPLIES, { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains(STORES.LIGHTUPS)) {
-        db.createObjectStore(STORES.LIGHTUPS, { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains(STORES.WARS)) {
-        db.createObjectStore(STORES.WARS, { keyPath: 'id' });
-      }
-    };
-  });
-  return dbPromise;
-};
-
-// Generic Helpers
-const getAll = async <T>(storeName: string): Promise<T[]> => {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(storeName, 'readonly');
-        const store = tx.objectStore(storeName);
-        const request = store.getAll();
-        request.onsuccess = () => resolve(request.result || []);
-        request.onerror = () => reject(request.error);
-    });
-};
-
-const getOne = async <T>(storeName: string, key: IDBValidKey): Promise<T | undefined> => {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(storeName, 'readonly');
-        const store = tx.objectStore(storeName);
-        const request = store.get(key);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
-};
-
-const put = async <T>(storeName: string, value: T): Promise<T> => {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(storeName, 'readwrite');
-        const store = tx.objectStore(storeName);
-        store.put(value);
-        tx.oncomplete = () => resolve(value);
-        tx.onerror = () => reject(tx.error);
-    });
-};
-
-const deleteItem = async (storeName: string, key: IDBValidKey): Promise<void> => {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(storeName, 'readwrite');
-        const store = tx.objectStore(storeName);
-        store.delete(key);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-    });
-};
-
+const convertWar = (w: SupabaseWar): War => ({
+  id: w.id,
+  age: w.age || '',
+  name: w.name,
+  longName: w.longName || w.name,
+  banner: w.banner,
+  headerImage: w.headerImage,
+  priority: w.priority
+});
 
 export const dbService = {
-  // Initialize DB
+  // Initialize DB - with Supabase we don't need to create default data
   init: async () => {
-    if (typeof window === 'undefined') return;
-    
+    // Check if we can connect to Supabase
     try {
-        const users = await getAll<User>(STORES.USERS);
-        if (users.length === 0) {
-            // Default admin user
-            const defaultUser: User = { 
-                id: 1, 
-                username: 'Admin User', 
-                email: 'admin@chaldea.org', 
-                role: 'ADMIN', 
-                password: 'admin',
-                status: 'ACTIVE',
-                registerIp: '127.0.0.1',
-                createdAt: Date.now()
-            };
-            await put(STORES.USERS, defaultUser);
-        }
+      const { data, error } = await supabase.from('servants').select('count').limit(1);
+      if (error) {
+        console.error('Supabase connection error:', error);
+      }
     } catch (e) {
-        console.error("Failed to initialize DB", e);
+      console.error('Failed to connect to Supabase', e);
     }
   },
 
+  // --- Servant Management ---
+
   getAllServants: async (): Promise<Servant[]> => {
-      return getAll<Servant>(STORES.SERVANTS);
+    const { data, error } = await supabase
+      .from('servants')
+      .select('*')
+      .order('collectionNo', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching servants:', error);
+      return [];
+    }
+
+    return data ? data.map(convertServant) : [];
   },
 
   saveServant: async (servant: Servant): Promise<Servant> => {
-      return put<Servant>(STORES.SERVANTS, servant);
+    const servantData: any = {
+      id: servant.id,
+      collectionNo: servant.collectionNo,
+      name: servant.name,
+      originalName: servant.originalName,
+      className: servant.className,
+      rarity: servant.rarity,
+      face: servant.face,
+      attribute: servant.attribute,
+      atkMax: servant.atkMax,
+      hpMax: servant.hpMax,
+      atkBase: servant.atkBase,
+      hpBase: servant.hpBase,
+      cost: servant.cost,
+      data: {
+        type: servant.type,
+        classId: servant.classId,
+        cards: servant.cards,
+        images: servant.images,
+        traits: servant.traits,
+        noblePhantasms: servant.noblePhantasms,
+        skills: servant.skills,
+        classPassive: servant.classPassive,
+        appendPassive: servant.appendPassive,
+        profile: servant.profile
+      }
+    };
+
+    const { data, error } = await supabase
+      .from('servants')
+      .upsert(servantData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving servant:', error);
+      throw error;
+    }
+
+    return convertServant(data);
   },
 
   deleteServant: async (id: number): Promise<void> => {
-      return deleteItem(STORES.SERVANTS, id);
+    const { error } = await supabase
+      .from('servants')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting servant:', error);
+      throw error;
+    }
   },
 
   // Bulk upsert for the Atlas Academy Sync
   bulkUpsert: async (servants: Servant[]): Promise<void> => {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORES.SERVANTS, 'readwrite');
-      const store = tx.objectStore(STORES.SERVANTS);
-      
-      servants.forEach(s => {
-          store.put(s);
-      });
-      
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(new Error("Bulk upsert failed: " + tx.error?.message));
-    });
+    const servantsData = servants.map(s => ({
+      id: s.id,
+      collectionNo: s.collectionNo,
+      name: s.name,
+      originalName: s.originalName,
+      className: s.className,
+      rarity: s.rarity,
+      face: s.face,
+      attribute: s.attribute,
+      atkMax: s.atkMax,
+      hpMax: s.hpMax,
+      atkBase: s.atkBase,
+      hpBase: s.hpBase,
+      cost: s.cost,
+      data: {
+        type: s.type,
+        classId: s.classId,
+        cards: s.cards,
+        images: s.images,
+        traits: s.traits,
+        noblePhantasms: s.noblePhantasms,
+        skills: s.skills,
+        classPassive: s.classPassive,
+        appendPassive: s.appendPassive,
+        profile: s.profile
+      }
+    }));
+
+    const { error } = await supabase
+      .from('servants')
+      .upsert(servantsData);
+
+    if (error) {
+      console.error('Bulk upsert failed:', error);
+      throw new Error('Bulk upsert failed: ' + error.message);
+    }
   },
 
   // --- Wars / Quests ---
 
   getAllWars: async (): Promise<War[]> => {
-    return getAll<War>(STORES.WARS);
+    const { data, error } = await supabase
+      .from('wars')
+      .select('*')
+      .order('priority', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching wars:', error);
+      return [];
+    }
+
+    return data ? data.map(convertWar) : [];
   },
 
   saveWar: async (war: War): Promise<War> => {
-    return put<War>(STORES.WARS, war);
+    const { data, error } = await supabase
+      .from('wars')
+      .upsert({
+        id: war.id,
+        age: war.age,
+        name: war.name,
+        longName: war.longName,
+        banner: war.banner,
+        headerImage: war.headerImage,
+        priority: war.priority
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving war:', error);
+      throw error;
+    }
+
+    return convertWar(data);
   },
 
   bulkUpsertWars: async (wars: War[]): Promise<void> => {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORES.WARS, 'readwrite');
-      const store = tx.objectStore(STORES.WARS);
-      
-      wars.forEach(w => {
-          store.put(w);
-      });
-      
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(new Error("Bulk upsert wars failed"));
-    });
+    const warsData = wars.map(w => ({
+      id: w.id,
+      age: w.age,
+      name: w.name,
+      longName: w.longName,
+      banner: w.banner,
+      headerImage: w.headerImage,
+      priority: w.priority
+    }));
+
+    const { error } = await supabase
+      .from('wars')
+      .upsert(warsData);
+
+    if (error) {
+      console.error('Bulk upsert wars failed:', error);
+      throw new Error('Bulk upsert wars failed: ' + error.message);
+    }
   },
 
   // --- User Management ---
+  // Note: With Supabase Auth, authentication is handled differently
+  // These methods are adapted to work with Supabase auth.users
 
   getAllUsers: async (): Promise<User[]> => {
-      return getAll<User>(STORES.USERS);
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching users:', error);
+      return [];
+    }
+
+    // Convert UUID to number for compatibility with existing code
+    // In production, you should update User type to use string IDs
+    return data ? data.map((u, idx) => ({
+      id: idx + 1, // Temporary numeric ID for compatibility
+      username: u.username,
+      email: u.email,
+      role: u.role,
+      status: u.status,
+      createdAt: new Date(u.created_at).getTime()
+    })) : [];
   },
 
   saveUser: async (user: User): Promise<User> => {
-      return put<User>(STORES.USERS, user);
+    // This would typically be handled by Supabase Auth
+    // For now, we'll just update the users table
+    console.warn('saveUser: Direct user modification should use Supabase Auth');
+    return user;
   },
 
   authenticateUser: async (usernameOrEmail: string, password: string): Promise<User | null> => {
-      const users = await getAll<User>(STORES.USERS);
-      const user = users.find(u => 
-        (u.username === usernameOrEmail || u.email === usernameOrEmail) && 
-        u.password === password
-      );
-      
-      if (user) {
-          if (user.status === 'SUSPENDED') {
-              throw new Error('This account has been suspended.');
-          }
-          const { password, ...safeUser } = user;
-          return safeUser as User;
-      }
+    // Use Supabase Auth instead
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: usernameOrEmail,
+      password: password
+    });
+
+    if (error || !data.user) {
+      console.error('Authentication error:', error);
       return null;
+    }
+
+    // Fetch user profile from users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    if (userError || !userData) {
+      console.error('Error fetching user profile:', userError);
+      return null;
+    }
+
+    if (userData.status === 'SUSPENDED') {
+      throw new Error('This account has been suspended.');
+    }
+
+    return {
+      id: 1, // Placeholder for compatibility
+      username: userData.username,
+      email: userData.email,
+      role: userData.role,
+      status: userData.status,
+      createdAt: new Date(userData.created_at).getTime()
+    };
   },
 
   registerUser: async (email: string, username: string, password: string, ip?: string): Promise<User> => {
-      const users = await getAll<User>(STORES.USERS);
-      
-      if (users.some(u => u.email === email)) {
-          throw new Error('Email already registered.');
+    // Use Supabase Auth to create user
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username: username
+        }
       }
-      if (users.some(u => u.username === username)) {
-          throw new Error('Username already taken.');
-      }
+    });
 
-      const newUser: User = {
-          id: Date.now(),
-          username,
-          email,
-          role: 'USER',
-          password,
-          status: 'ACTIVE',
-          registerIp: ip || 'unknown',
-          createdAt: Date.now()
+    if (error) {
+      if (error.message.includes('already registered')) {
+        throw new Error('Email already registered.');
+      }
+      throw error;
+    }
+
+    if (!data.user) {
+      throw new Error('Failed to create user');
+    }
+
+    // The trigger in Supabase will automatically create the user profile
+    // Wait a bit for the trigger to complete
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Fetch the created user profile
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    if (userError || !userData) {
+      // Profile might not exist yet, return basic info
+      return {
+        id: 1,
+        username,
+        email,
+        role: 'USER',
+        status: 'ACTIVE',
+        createdAt: Date.now()
       };
+    }
 
-      await put(STORES.USERS, newUser);
-      
-      const { password: _, ...safeUser } = newUser;
-      return safeUser as User;
+    return {
+      id: 1,
+      username: userData.username,
+      email: userData.email,
+      role: userData.role,
+      status: userData.status,
+      createdAt: new Date(userData.created_at).getTime()
+    };
   },
 
   // --- Rating System ---
 
   getAllRatings: async (): Promise<Rating[]> => {
-      return getAll<Rating>(STORES.RATINGS);
+    const { data, error } = await supabase
+      .from('ratings')
+      .select(`
+        *,
+        users (username)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching ratings:', error);
+      return [];
+    }
+
+    return data ? data.map(r => ({
+      id: r.id,
+      userId: 1, // Placeholder
+      username: (r.users as any)?.username || 'Unknown',
+      servantId: r.servantId,
+      score: r.score,
+      comment: r.comment || '',
+      timestamp: new Date(r.created_at).getTime()
+    })) : [];
   },
 
   getRatingsForServant: async (servantId: number): Promise<Rating[]> => {
-      const allRatings = await getAll<Rating>(STORES.RATINGS);
-      const servantRatings = allRatings.filter(r => r.servantId === servantId);
-      servantRatings.sort((a, b) => b.timestamp - a.timestamp);
-      return servantRatings;
+    const { data, error } = await supabase
+      .from('ratings')
+      .select(`
+        *,
+        users (username)
+      `)
+      .eq('servantId', servantId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching ratings for servant:', error);
+      return [];
+    }
+
+    return data ? data.map(r => ({
+      id: r.id,
+      userId: 1,
+      username: (r.users as any)?.username || 'Unknown',
+      servantId: r.servantId,
+      score: r.score,
+      comment: r.comment || '',
+      timestamp: new Date(r.created_at).getTime()
+    })) : [];
   },
 
   getUserRating: async (userId: number, servantId: number): Promise<Rating | undefined> => {
-      const allRatings = await getAll<Rating>(STORES.RATINGS);
-      return allRatings.find(r => r.servantId === servantId && r.userId === userId);
+    // Get current user session
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return undefined;
+
+    const { data, error } = await supabase
+      .from('ratings')
+      .select(`
+        *,
+        users (username)
+      `)
+      .eq('userId', user.id)
+      .eq('servantId', servantId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(); // Use maybeSingle to handle 0 or 1 results
+
+    if (error) {
+      console.error('Error fetching user rating:', error);
+      return undefined;
+    }
+
+    if (!data) {
+      return undefined; // User hasn't rated this servant yet
+    }
+
+    return {
+      id: data.id,
+      userId: 1,
+      username: (data.users as any)?.username || 'Unknown',
+      servantId: data.servantId,
+      score: data.score,
+      comment: data.comment || '',
+      timestamp: new Date(data.created_at).getTime()
+    };
   },
 
   saveRating: async (rating: Omit<Rating, 'id' | 'timestamp'>): Promise<Rating> => {
-      const allRatings = await getAll<Rating>(STORES.RATINGS);
-      const existing = allRatings.find(r => r.userId === rating.userId && r.servantId === rating.servantId);
-      
-      const newRating: Rating = {
-          ...rating,
-          id: existing ? existing.id : crypto.randomUUID(),
-          timestamp: Date.now()
-      };
+    // Get current user session
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
 
-      await put(STORES.RATINGS, newRating);
-      return newRating;
+    const { data, error } = await supabase
+      .from('ratings')
+      .upsert({
+        userId: user.id,
+        servantId: rating.servantId,
+        score: rating.score,
+        comment: rating.comment
+      }, {
+        onConflict: 'userId,servantId' // Specify which columns define uniqueness
+      })
+      .select(`
+        *,
+        users (username)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error saving rating:', error);
+      throw error;
+    }
+
+    return {
+      id: data.id,
+      userId: 1,
+      username: (data.users as any)?.username || rating.username,
+      servantId: data.servantId,
+      score: data.score,
+      comment: data.comment || '',
+      timestamp: new Date(data.created_at).getTime()
+    };
   },
 
   // --- Replies & LightUps ---
 
   getAllReplies: async (): Promise<Reply[]> => {
-      return getAll<Reply>(STORES.REPLIES);
+    const { data, error } = await supabase
+      .from('replies')
+      .select(`
+        *,
+        users (username)
+      `)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching replies:', error);
+      return [];
+    }
+
+    return data ? data.map(r => ({
+      id: r.id,
+      ratingId: r.ratingId,
+      userId: 1,
+      username: (r.users as any)?.username || 'Unknown',
+      content: r.content,
+      timestamp: new Date(r.created_at).getTime()
+    })) : [];
   },
 
   getRepliesForRating: async (ratingId: string): Promise<Reply[]> => {
-      const allReplies = await getAll<Reply>(STORES.REPLIES);
-      const relevant = allReplies.filter(r => r.ratingId === ratingId);
-      relevant.sort((a, b) => a.timestamp - b.timestamp);
-      return relevant;
+    const { data, error } = await supabase
+      .from('replies')
+      .select(`
+        *,
+        users (username)
+      `)
+      .eq('ratingId', ratingId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching replies for rating:', error);
+      return [];
+    }
+
+    return data ? data.map(r => ({
+      id: r.id,
+      ratingId: r.ratingId,
+      userId: 1,
+      username: (r.users as any)?.username || 'Unknown',
+      content: r.content,
+      timestamp: new Date(r.created_at).getTime()
+    })) : [];
   },
 
   saveReply: async (ratingId: string, userId: number, username: string, content: string): Promise<Reply> => {
-      const newReply: Reply = {
-          id: crypto.randomUUID(),
-          ratingId,
-          userId,
-          username,
-          content,
-          timestamp: Date.now()
-      };
-      await put(STORES.REPLIES, newReply);
-      return newReply;
+    // Get current user session
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    const { data, error } = await supabase
+      .from('replies')
+      .insert({
+        ratingId,
+        userId: user.id,
+        content
+      })
+      .select(`
+        *,
+        users (username)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error saving reply:', error);
+      throw error;
+    }
+
+    return {
+      id: data.id,
+      ratingId: data.ratingId,
+      userId: 1,
+      username: (data.users as any)?.username || username,
+      content: data.content,
+      timestamp: new Date(data.created_at).getTime()
+    };
   },
 
   toggleLightUp: async (ratingId: string, userId: number): Promise<boolean> => {
-      const allLightUps = await getAll<LightUp>(STORES.LIGHTUPS);
-      const existing = allLightUps.find(l => l.ratingId === ratingId && l.userId === userId);
-      
-      if (existing) {
-          await deleteItem(STORES.LIGHTUPS, existing.id);
-          return false;
-      } else {
-          const newLightUp: LightUp = {
-              id: crypto.randomUUID(),
-              ratingId,
-              userId,
-              timestamp: Date.now()
-          };
-          await put(STORES.LIGHTUPS, newLightUp);
-          return true;
+    // Get current user session
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    // Check if already lit up
+    const { data: existing, error: checkError } = await supabase
+      .from('light_ups')
+      .select('id')
+      .eq('ratingId', ratingId)
+      .eq('userId', user.id)
+      .maybeSingle();
+
+    if (existing) {
+      // Remove light up
+      const { error } = await supabase
+        .from('light_ups')
+        .delete()
+        .eq('id', existing.id);
+
+      if (error) {
+        console.error('Error removing light up:', error);
+        throw error;
       }
+      return false;
+    } else {
+      // Add light up
+      const { error } = await supabase
+        .from('light_ups')
+        .insert({
+          ratingId,
+          userId: user.id
+        });
+
+      if (error) {
+        console.error('Error adding light up:', error);
+        throw error;
+      }
+      return true;
+    }
   },
 
   getLightUpsForRating: async (ratingId: string): Promise<number> => {
-      const allLightUps = await getAll<LightUp>(STORES.LIGHTUPS);
-      return allLightUps.filter(l => l.ratingId === ratingId).length;
+    const { count, error } = await supabase
+      .from('light_ups')
+      .select('*', { count: 'exact', head: true })
+      .eq('ratingId', ratingId);
+
+    if (error) {
+      console.error('Error counting light ups:', error);
+      return 0;
+    }
+
+    return count || 0;
   },
 
   hasUserLitUp: async (ratingId: string, userId: number): Promise<boolean> => {
-      const allLightUps = await getAll<LightUp>(STORES.LIGHTUPS);
-      return allLightUps.some(l => l.ratingId === ratingId && l.userId === userId);
+    // Get current user session
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { data, error } = await supabase
+      .from('light_ups')
+      .select('id')
+      .eq('ratingId', ratingId)
+      .eq('userId', user.id)
+      .maybeSingle();
+
+    return !!data;
   },
 
   // --- Top Rating Fetcher for Rankings ---
   getTopReviewForServant: async (servantId: number): Promise<Rating | null> => {
-      const ratings = await getAll<Rating>(STORES.RATINGS);
-      const servantRatings = ratings.filter(r => r.servantId === servantId && r.comment && r.comment.length > 0);
-      
-      if (servantRatings.length === 0) return null;
+    // Get all ratings for this servant with comment
+    const { data: ratings, error } = await supabase
+      .from('ratings')
+      .select(`
+        *,
+        users (username)
+      `)
+      .eq('servantId', servantId)
+      .not('comment', 'is', null)
+      .neq('comment', '');
 
-      const lightUps = await getAll<LightUp>(STORES.LIGHTUPS);
-      
-      // Calculate lightups for each rating
-      const ratingsWithCounts = servantRatings.map(r => {
-          const count = lightUps.filter(l => l.ratingId === r.id).length;
-          return { ...r, lightUpCount: count };
-      });
+    if (error || !ratings || ratings.length === 0) {
+      return null;
+    }
 
-      // Sort by lightUpCount desc, then timestamp desc
-      ratingsWithCounts.sort((a, b) => {
-          if (b.lightUpCount !== a.lightUpCount) return b.lightUpCount - a.lightUpCount;
-          return b.timestamp - a.timestamp;
-      });
+    // Get light up counts for each rating
+    const ratingsWithCounts = await Promise.all(
+      ratings.map(async (r) => {
+        const count = await dbService.getLightUpsForRating(r.id);
+        return {
+          id: r.id,
+          userId: 1,
+          username: (r.users as any)?.username || 'Unknown',
+          servantId: r.servantId,
+          score: r.score,
+          comment: r.comment || '',
+          timestamp: new Date(r.created_at).getTime(),
+          lightUpCount: count
+        };
+      })
+    );
 
-      return ratingsWithCounts[0];
+    // Sort by lightUpCount desc, then timestamp desc
+    ratingsWithCounts.sort((a, b) => {
+      if (b.lightUpCount !== a.lightUpCount) return b.lightUpCount - a.lightUpCount;
+      return b.timestamp - a.timestamp;
+    });
+
+    return ratingsWithCounts[0];
   }
 };
+

@@ -6,27 +6,107 @@ CREATE TABLE IF NOT EXISTS public.servants (
     id BIGINT PRIMARY KEY,
     "collectionNo" INT NOT NULL,
     name TEXT NOT NULL,
+    "originalName" TEXT,
     "className" TEXT NOT NULL,
-    rarity INT NOT NULL,
+    rarity INT NOT NULL CHECK (rarity >= 0 AND rarity <= 5),
     face TEXT,
-    data JSONB, -- Store skills, NPs, images, traits, etc. here
+    attribute TEXT,
+    "atkMax" INT,
+    "hpMax" INT,
+    "atkBase" INT,
+    "hpBase" INT,
+    cost INT,
+    "averageScore" DECIMAL(4, 2) DEFAULT 0.00,
+    data JSONB, -- Store skills, NPs, images, traits, cards, profile, etc. here
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add columns if they don't exist (for existing tables)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_schema = 'public' 
+                   AND table_name = 'servants' 
+                   AND column_name = 'averageScore') THEN
+        ALTER TABLE public.servants ADD COLUMN "averageScore" DECIMAL(4, 2) DEFAULT 0.00;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_schema = 'public' 
+                   AND table_name = 'servants' 
+                   AND column_name = 'originalName') THEN
+        ALTER TABLE public.servants ADD COLUMN "originalName" TEXT;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_schema = 'public' 
+                   AND table_name = 'servants' 
+                   AND column_name = 'attribute') THEN
+        ALTER TABLE public.servants ADD COLUMN attribute TEXT;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_schema = 'public' 
+                   AND table_name = 'servants' 
+                   AND column_name = 'atkMax') THEN
+        ALTER TABLE public.servants ADD COLUMN "atkMax" INT;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_schema = 'public' 
+                   AND table_name = 'servants' 
+                   AND column_name = 'hpMax') THEN
+        ALTER TABLE public.servants ADD COLUMN "hpMax" INT;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_schema = 'public' 
+                   AND table_name = 'servants' 
+                   AND column_name = 'atkBase') THEN
+        ALTER TABLE public.servants ADD COLUMN "atkBase" INT;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_schema = 'public' 
+                   AND table_name = 'servants' 
+                   AND column_name = 'hpBase') THEN
+        ALTER TABLE public.servants ADD COLUMN "hpBase" INT;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_schema = 'public' 
+                   AND table_name = 'servants' 
+                   AND column_name = 'cost') THEN
+        ALTER TABLE public.servants ADD COLUMN cost INT;
+    END IF;
+END $$;
 
 -- Create users table for user data
 -- Links to Supabase auth.users
 CREATE TABLE IF NOT EXISTS public.users (
     id UUID REFERENCES auth.users NOT NULL PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
-    email TEXT,
+    email TEXT NOT NULL,
     role TEXT DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN')),
+    status TEXT DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'SUSPENDED')),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add status column if it doesn't exist (for existing tables)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_schema = 'public' 
+                   AND table_name = 'users' 
+                   AND column_name = 'status') THEN
+        ALTER TABLE public.users ADD COLUMN status TEXT DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'SUSPENDED'));
+    END IF;
+END $$;
 
 -- Create ratings table
 CREATE TABLE IF NOT EXISTS public.ratings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    "userId" UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    "userId" UUID REFERENCES public.users(id) ON DELETE CASCADE,
     "servantId" BIGINT REFERENCES servants(id) ON DELETE CASCADE,
     score INT NOT NULL CHECK (score >= 1 AND score <= 10),
     comment TEXT,
@@ -39,7 +119,7 @@ CREATE TABLE IF NOT EXISTS public.ratings (
 CREATE TABLE IF NOT EXISTS public.replies (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     "ratingId" UUID REFERENCES ratings(id) ON DELETE CASCADE,
-    "userId" UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    "userId" UUID REFERENCES public.users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -48,7 +128,7 @@ CREATE TABLE IF NOT EXISTS public.replies (
 CREATE TABLE IF NOT EXISTS public.light_ups (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     "ratingId" UUID REFERENCES ratings(id) ON DELETE CASCADE,
-    "userId" UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    "userId" UUID REFERENCES public.users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE("ratingId", "userId") -- Each user can only light up a rating once
 );
@@ -69,12 +149,15 @@ CREATE TABLE IF NOT EXISTS public.wars (
 CREATE INDEX IF NOT EXISTS idx_servants_collection ON servants("collectionNo");
 CREATE INDEX IF NOT EXISTS idx_servants_class ON servants("className");
 CREATE INDEX IF NOT EXISTS idx_servants_rarity ON servants(rarity);
+CREATE INDEX IF NOT EXISTS idx_servants_average_score ON servants("averageScore");
 CREATE INDEX IF NOT EXISTS idx_ratings_servant ON ratings("servantId");
 CREATE INDEX IF NOT EXISTS idx_ratings_user ON ratings("userId");
+CREATE INDEX IF NOT EXISTS idx_ratings_created ON ratings(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_replies_rating ON replies("ratingId");
 CREATE INDEX IF NOT EXISTS idx_replies_user ON replies("userId");
 CREATE INDEX IF NOT EXISTS idx_light_ups_rating ON light_ups("ratingId");
 CREATE INDEX IF NOT EXISTS idx_light_ups_user ON light_ups("userId");
+CREATE INDEX IF NOT EXISTS idx_wars_priority ON wars(priority);
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.servants ENABLE ROW LEVEL SECURITY;
@@ -201,6 +284,48 @@ GRANT INSERT, UPDATE, DELETE ON public.users TO authenticated;
 GRANT INSERT, UPDATE, DELETE ON public.ratings TO authenticated;
 GRANT INSERT, UPDATE, DELETE ON public.replies TO authenticated;
 GRANT INSERT, UPDATE, DELETE ON public.light_ups TO authenticated;
+
+-- ============================================
+-- Functions and Triggers
+-- ============================================
+
+-- Function to automatically update updated_at timestamp
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to update ratings.updated_at
+DROP TRIGGER IF EXISTS update_ratings_updated_at ON public.ratings;
+CREATE TRIGGER update_ratings_updated_at
+  BEFORE UPDATE ON public.ratings
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
+
+-- Function to update servant average score
+CREATE OR REPLACE FUNCTION public.update_servant_average_score()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.servants
+  SET "averageScore" = (
+    SELECT COALESCE(AVG(score), 0)
+    FROM public.ratings
+    WHERE "servantId" = COALESCE(NEW."servantId", OLD."servantId")
+  )
+  WHERE id = COALESCE(NEW."servantId", OLD."servantId");
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to recalculate servant average on rating insert/update/delete
+DROP TRIGGER IF EXISTS update_servant_score_on_rating_change ON public.ratings;
+CREATE TRIGGER update_servant_score_on_rating_change
+  AFTER INSERT OR UPDATE OR DELETE ON public.ratings
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_servant_average_score();
 
 -- ============================================
 -- DEBUG: Create Admin Account

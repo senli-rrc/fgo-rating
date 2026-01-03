@@ -38,7 +38,7 @@ const ServantCard: React.FC<ServantCardProps> = ({ servant }) => {
   return (
     <Link
       to={`/servant/${servant.collectionNo}`}
-      className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-100 overflow-hidden group flex flex-col h-full"
+      className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-100 overflow-hidden group"
     >
       <div className="relative w-full flex justify-center items-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
         <div className="relative w-32 h-32">
@@ -57,32 +57,14 @@ const ServantCard: React.FC<ServantCardProps> = ({ servant }) => {
             {servant.averageScore && servant.averageScore >= 1 ? servant.averageScore : <span className="text-[9px]">TBD</span>}
           </div>
 
-          {/* ID at bottom */}
+          {/* Class Name at bottom left */}
+          <div className={`absolute -bottom-1 -left-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border shadow-sm ${classStyle}`}>
+            {servant.className}
+          </div>
+
+          {/* ID at bottom right */}
           <div className="absolute -bottom-1 -right-1 bg-black/70 text-white px-1.5 py-0.5 rounded text-[10px] font-mono shadow-sm">
             ID: {servant.collectionNo}
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4 flex flex-col flex-grow">
-        <div className="mb-2">
-          <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-full border ${classStyle}`}>
-            {servant.className}
-          </span>
-        </div>
-        <h3 className="font-bold text-lg text-gray-800 leading-tight mb-1 group-hover:text-blue-600 transition-colors">
-          {servant.name}
-        </h3>
-        <p className="text-gray-500 text-sm mb-3 font-mono truncate">{servant.originalName}</p>
-
-        <div className="mt-auto grid grid-cols-2 gap-2 text-xs text-gray-600">
-          <div className="bg-gray-50 p-1 rounded text-center">
-            <span className="block font-bold text-red-500">ATK</span>
-            {servant.atkMax.toLocaleString()}
-          </div>
-          <div className="bg-gray-50 p-1 rounded text-center">
-            <span className="block font-bold text-blue-500">HP</span>
-            {servant.hpMax.toLocaleString()}
           </div>
         </div>
       </div>

@@ -9,7 +9,6 @@ interface HomePageProps {
   loading: boolean;
   importing: boolean;
   region: string;
-  onSelectServant: (servant: Servant) => void;
   onQuickImport: () => void;
   onRegionChange: (region: string) => void;
 }
@@ -22,7 +21,6 @@ const HomePage: React.FC<HomePageProps> = ({
   loading,
   importing,
   region,
-  onSelectServant,
   onQuickImport,
   onRegionChange
 }) => {
@@ -137,7 +135,6 @@ const HomePage: React.FC<HomePageProps> = ({
             selectedClassId={selectedClassId}
             onClassChange={setSelectedClassId}
             allServants={servants}
-            onSelectServant={onSelectServant}
           />
 
           {filteredServants.length === 0 ? (
@@ -159,14 +156,12 @@ const HomePage: React.FC<HomePageProps> = ({
                     <ServantCard
                       key={servant.id}
                       servant={servant}
-                      onClick={onSelectServant}
                     />
                   ))}
                 </div>
               ) : (
                 <ServantTable
                   servants={paginatedServants}
-                  onSelectServant={onSelectServant}
                 />
               )}
             </>

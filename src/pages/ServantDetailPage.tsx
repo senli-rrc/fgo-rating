@@ -1,18 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Servant, User, ViewState, SkillModel, NpModel } from '../types';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Servant, User, SkillModel, NpModel } from '../types';
 import RatingSystem from '../components/RatingSystem';
 
 interface ServantDetailProps {
-    servant: Servant;
-    onBack: () => void;
+    servants: Servant[];
     isAdmin: boolean;
     onEdit: (servant: Servant) => void;
-    prevServant?: Servant;
-    nextServant?: Servant;
-    onSelectServant: (servant: Servant) => void;
     user?: User | null;
-    onNavigateToLogin?: () => void;
-    onViewReviews?: () => void;
 }
 
 // Logic to extract relevant scaling rows (for Skills)
@@ -400,25 +395,45 @@ const NpGroupDisplay: React.FC<{ nps: NpModel[] }> = ({ nps }) => {
 };
 
 const ServantDetailPage: React.FC<ServantDetailProps> = ({
-    servant,
-    onBack,
+    servants,
     isAdmin,
     onEdit,
-    prevServant,
-    nextServant,
-    onSelectServant,
-    user,
-    onNavigateToLogin,
-    onViewReviews
+    user
 }) => {
+    const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [activeTab, setActiveTab] = useState<'none' | 'np' | 'skills' | 'class' | 'append' | 'profile'>('np');
+
+    // Find servant from URL param
+    const servant = servants.find(s => s.id === Number(id));
+
+    // Find prev/next servants
+    const currentIndex = servants.findIndex(s => s.id === Number(id));
+    const prevServant = currentIndex > 0 ? servants[currentIndex - 1] : undefined;
+    const nextServant = currentIndex < servants.length - 1 ? servants[currentIndex + 1] : undefined;
 
     // Reset image carousel and tab when the servant changes
     useEffect(() => {
         setCurrentImageIndex(0);
         setActiveTab('np');
-    }, [servant.id]);
+    }, [id]);
+
+    if (!servant) {
+        return (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Servant not found</h2>
+                    <button
+                        onClick={() => navigate('/servants')}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                    >
+                        Back to Home
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     const images = servant.images && servant.images.length > 0 ? servant.images : [servant.face];
 
@@ -510,7 +525,7 @@ const ServantDetailPage: React.FC<ServantDetailProps> = ({
             {/* Top Actions: Back & Edit */}
             <div className="flex justify-between items-center mb-4">
                 <button
-                    onClick={onBack}
+                    onClick={() => navigate('/servants')}
                     className="flex items-center text-gray-600 hover:text-blue-600 transition-colors font-medium"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -536,7 +551,7 @@ const ServantDetailPage: React.FC<ServantDetailProps> = ({
                 <div className="w-1/2 flex justify-start">
                     {prevServant ? (
                         <button
-                            onClick={() => onSelectServant(prevServant)}
+                            onClick={() => navigate(`/servant/${prevServant.id}`)}
                             className="flex items-center text-gray-700 hover:text-blue-600 transition-colors group text-left"
                         >
                             <div className="bg-gray-100 group-hover:bg-blue-100 p-2 rounded-full mr-3 transition-colors">
@@ -559,7 +574,7 @@ const ServantDetailPage: React.FC<ServantDetailProps> = ({
                 <div className="w-1/2 flex justify-end">
                     {nextServant ? (
                         <button
-                            onClick={() => onSelectServant(nextServant)}
+                            onClick={() => navigate(`/servant/${nextServant.id}`)}
                             className="flex items-center text-gray-700 hover:text-blue-600 transition-colors group text-right"
                         >
                             <div>
@@ -601,8 +616,8 @@ const ServantDetailPage: React.FC<ServantDetailProps> = ({
                     <RatingSystem
                         servantId={servant.id}
                         user={user || null}
-                        onNavigateToLogin={() => onNavigateToLogin && onNavigateToLogin()}
-                        onViewReviews={onViewReviews}
+                        onNavigateToLogin={() => navigate('/login')}
+                        onViewReviews={() => navigate(`/servant/${servant.id}/reviews`)}
                     />
                 </div>
             </div>

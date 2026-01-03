@@ -1,12 +1,13 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Servant } from '../types';
 
 interface ServantTableProps {
   servants: Servant[];
-  onSelectServant: (servant: Servant) => void;
 }
 
-const ServantTable: React.FC<ServantTableProps> = ({ servants, onSelectServant }) => {
+const ServantTable: React.FC<ServantTableProps> = ({ servants }) => {
+  const navigate = useNavigate();
   const getScoreColor = (score: number | undefined) => {
     if (score === undefined) return 'bg-gray-200 text-gray-500';
     if (score >= 8) return 'bg-green-500 text-white';
@@ -49,7 +50,7 @@ const ServantTable: React.FC<ServantTableProps> = ({ servants, onSelectServant }
           {servants.map((servant) => (
             <tr 
               key={servant.id} 
-              onClick={() => onSelectServant(servant)}
+              onClick={() => navigate(`/servant/${servant.id}`)}
               className="hover:bg-blue-50 cursor-pointer transition-colors duration-150"
             >
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

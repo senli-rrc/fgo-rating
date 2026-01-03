@@ -1,22 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Servant, User, Rating, Reply } from '../types';
 import { dbService } from '../services/dbService';
 import RatingSystem from '../components/RatingSystem';
 
 interface ReviewsPageProps {
-    servant: Servant;
+    servants: Servant[];
     user: User | null;
-    onBack: () => void;
-    onNavigateToLogin: () => void;
 }
 
 interface ReviewItemProps {
     rating: Rating;
     user: User | null;
-    onNavigateToLogin: () => void;
 }
 
-const ReviewItem: React.FC<ReviewItemProps> = ({ rating, user, onNavigateToLogin }) => {
+const ReviewItem: React.FC<ReviewItemProps> = ({ rating, user }) => {
+    const navigate = useNavigate();
     const [replies, setReplies] = useState<Reply[]>([]);
     const [lightUps, setLightUps] = useState(0);
     const [isLit, setIsLit] = useState(false);
@@ -43,7 +42,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ rating, user, onNavigateToLogin
 
     const handleLightUp = async () => {
         if (!user) {
-            onNavigateToLogin();
+            navigate('/login');
             return;
         }
 
@@ -66,7 +65,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ rating, user, onNavigateToLogin
 
     const handleReplySubmit = async () => {
         if (!user) {
-            onNavigateToLogin();
+            navigate('/login');
             return;
         }
         if (!replyText.trim()) return;
@@ -118,7 +117,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ rating, user, onNavigateToLogin
 
                 <button
                     onClick={() => {
-                        if (!user) onNavigateToLogin();
+                        if (!user) navigate('/login');
                         else setShowReplyInput(!showReplyInput);
                     }}
                     className="flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors"
@@ -174,23 +173,45 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ rating, user, onNavigateToLogin
     );
 };
 
-const ReviewsPage: React.FC<ReviewsPageProps> = ({ servant, user, onBack, onNavigateToLogin }) => {
+const ReviewsPage: React.FC<ReviewsPageProps> = ({ servants, user }) => {
+    const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const [ratings, setRatings] = useState<Rating[]>([]);
 
+    // Find servant from URL param
+    const servant = servants.find(s => s.id === Number(id));
+
     useEffect(() => {
+        if (!servant) return;
         const fetchRatings = async () => {
             const data = await dbService.getRatingsForServant(servant.id);
             setRatings(data);
         };
         fetchRatings();
-    }, [servant.id]);
+    }, [servant?.id]);
+
+    if (!servant) {
+        return (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Servant not found</h2>
+                    <button
+                        onClick={() => navigate('/servants')}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                    >
+                        Back to Home
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 animate-fade-in pb-20">
             {/* Header */}
             <div className="mb-6">
                 <button
-                    onClick={onBack}
+                    onClick={() => navigate(`/servant/${servant.id}`)}
                     className="flex items-center text-gray-600 hover:text-blue-600 transition-colors font-medium mb-4"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -214,7 +235,7 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ servant, user, onBack, onNavi
                 <RatingSystem
                     servantId={servant.id}
                     user={user}
-                    onNavigateToLogin={onNavigateToLogin}
+                    onNavigateToLogin={() => navigate('/login')}
                 />
             </div>
 
@@ -235,7 +256,6 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ servant, user, onBack, onNavi
                             key={rating.id}
                             rating={rating}
                             user={user}
-                            onNavigateToLogin={onNavigateToLogin}
                         />
                     ))
                 )}

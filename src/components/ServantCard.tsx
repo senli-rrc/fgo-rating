@@ -1,12 +1,12 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Servant } from '../types';
 
 interface ServantCardProps {
   servant: Servant;
-  onClick: (servant: Servant) => void;
 }
 
-const ServantCard: React.FC<ServantCardProps> = ({ servant, onClick }) => {
+const ServantCard: React.FC<ServantCardProps> = ({ servant }) => {
   const getRarityStars = (rarity: number) => {
     return "★".repeat(rarity);
   };
@@ -35,8 +35,8 @@ const ServantCard: React.FC<ServantCardProps> = ({ servant, onClick }) => {
   const scoreColor = getScoreColor(servant.averageScore);
 
   return (
-    <div 
-      onClick={() => onClick(servant)}
+    <Link 
+      to={`/servant/${servant.id}`}
       className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-100 overflow-hidden group flex flex-col h-full"
     >
       <div className="relative aspect-square overflow-hidden bg-gray-200">
@@ -83,7 +83,7 @@ const ServantCard: React.FC<ServantCardProps> = ({ servant, onClick }) => {
             </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
 

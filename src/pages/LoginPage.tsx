@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface LoginPageProps {
   onLogin: (username: string, password?: string) => void;
-  onCancel: () => void;
-  onNavigateToRegister: () => void;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onCancel, onNavigateToRegister }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -68,7 +68,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onCancel, onNavigateToRe
           <div className="flex gap-3 mt-6">
             <button
               type="button"
-              onClick={onCancel}
+              onClick={() => navigate('/servants')}
               className="w-1/2 px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
               Cancel
@@ -97,7 +97,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onCancel, onNavigateToRe
         <div className="mt-6 pt-6 border-t border-gray-100 text-center">
           <p className="text-sm text-gray-600 mb-2">New to Chaldea?</p>
           <button
-            onClick={onNavigateToRegister}
+            onClick={() => navigate('/register')}
             className="text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors flex items-center justify-center w-full"
           >
             Create a Master Account

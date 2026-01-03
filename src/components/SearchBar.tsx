@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Servant } from '../types';
 import { CLASSES } from '../services/mockData';
 
@@ -8,7 +9,6 @@ interface SearchBarProps {
   selectedClassId: number | null;
   onClassChange: (classId: number | null) => void;
   allServants: Servant[];
-  onSelectServant: (servant: Servant) => void;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
@@ -16,9 +16,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
   onSearchChange,
   selectedClassId,
   onClassChange,
-  allServants,
-  onSelectServant
+  allServants
 }) => {
+  const navigate = useNavigate();
   const [showSuggestions, setShowSuggestions] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -77,7 +77,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                   key={servant.id}
                   className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-blue-50 flex items-center border-b border-gray-50 last:border-0"
                   onClick={() => {
-                    onSelectServant(servant);
+                    navigate(`/servant/${servant.id}`);
                     setShowSuggestions(false);
                     onSearchChange(servant.name);
                   }}

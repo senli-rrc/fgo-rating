@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Servant } from '../types';
 import { CLASSES } from '../services/mockData';
 import { dbService } from '../services/dbService';
 
 interface RankingPageProps {
     servants: Servant[];
-    onNavigateToReviews: (servant: Servant) => void;
 }
 
 interface RankedServant extends Servant {
@@ -13,7 +13,7 @@ interface RankedServant extends Servant {
     ratingCount: number;
 }
 
-const RankingPage: React.FC<RankingPageProps> = ({ servants, onNavigateToReviews }) => {
+const RankingPage: React.FC<RankingPageProps> = ({ servants }) => {
     const [activeCategory, setActiveCategory] = useState<number | 'ALL'>('ALL');
     const [rankedServants, setRankedServants] = useState<RankedServant[]>([]);
     const [loading, setLoading] = useState(false);
@@ -126,9 +126,9 @@ const RankingPage: React.FC<RankingPageProps> = ({ servants, onNavigateToReviews
                     </div>
                 ) : (
                     rankedServants.map((servant, index) => (
-                        <div
+                        <Link
                             key={servant.id}
-                            onClick={() => onNavigateToReviews(servant)}
+                            to={`/servant/${servant.id}/reviews`}
                             className="bg-white rounded-lg border border-gray-100 p-4 flex items-center gap-4 hover:shadow-lg transition-all duration-300 cursor-pointer group relative overflow-hidden"
                         >
                             {/* Rank Number */}
@@ -190,7 +190,7 @@ const RankingPage: React.FC<RankingPageProps> = ({ servants, onNavigateToReviews
                                     </>
                                 )}
                             </div>
-                        </div>
+                        </Link>
                     ))
                 )}
             </div>

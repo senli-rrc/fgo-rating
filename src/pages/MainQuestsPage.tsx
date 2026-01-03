@@ -57,29 +57,29 @@ const MainQuestsPage: React.FC<MainQuestsPageProps> = ({ region }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {wars.map((war) => (
-                    <div 
-                        key={war.id} 
+                    <div
+                        key={war.id}
                         className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 group"
                     >
                         {/* Banner Image - Aspect Ratio adjusted for 450x125, background set to white */}
                         <div className="w-full aspect-[450/125] bg-white overflow-hidden relative">
-                             {war.banner ? (
-                                <img 
-                                    src={war.banner} 
-                                    alt={war.longName} 
+                            {war.banner ? (
+                                <img
+                                    src={war.banner}
+                                    alt={war.longName}
                                     className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                                 />
-                             ) : (
+                            ) : (
                                 <div className="w-full h-full flex items-center justify-center text-gray-500 bg-gray-200">
                                     No Banner Available
                                 </div>
-                             )}
-                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60"></div>
-                             <div className="absolute bottom-0 left-0 p-4">
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60"></div>
+                            <div className="absolute bottom-0 left-0 p-4">
                                 <span className="text-xs font-bold text-yellow-400 bg-black/60 px-2 py-1 rounded backdrop-blur-sm mb-1 inline-block">
                                     ID: {war.id}
                                 </span>
-                             </div>
+                            </div>
                         </div>
 
                         {/* Content */}

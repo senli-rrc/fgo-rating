@@ -4,10 +4,10 @@ import { dbService } from '../services/dbService';
 import RatingSystem from '../components/RatingSystem';
 
 interface ReviewsPageProps {
-  servant: Servant;
-  user: User | null;
-  onBack: () => void;
-  onNavigateToLogin: () => void;
+    servant: Servant;
+    user: User | null;
+    onBack: () => void;
+    onNavigateToLogin: () => void;
 }
 
 interface ReviewItemProps {
@@ -46,7 +46,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ rating, user, onNavigateToLogin
             onNavigateToLogin();
             return;
         }
-        
+
         // Optimistic UI update
         const newIsLit = !isLit;
         setIsLit(newIsLit);
@@ -54,13 +54,13 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ rating, user, onNavigateToLogin
 
         // API Call
         const actualIsLit = await dbService.toggleLightUp(rating.id, user.id);
-        
+
         // Correct if mismatch (though rare in sync code)
         if (actualIsLit !== newIsLit) {
-             setIsLit(actualIsLit);
-             // Re-fetch count to be safe
-             const count = await dbService.getLightUpsForRating(rating.id);
-             setLightUps(count);
+            setIsLit(actualIsLit);
+            // Re-fetch count to be safe
+            const count = await dbService.getLightUpsForRating(rating.id);
+            setLightUps(count);
         }
     };
 
@@ -93,7 +93,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ rating, user, onNavigateToLogin
         <div className="bg-white border border-gray-200 rounded-lg p-6 mb-4 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
-                     <div className={`w-10 h-10 rounded-md flex items-center justify-center text-white font-bold text-lg ${getScoreColor(rating.score)}`}>
+                    <div className={`w-10 h-10 rounded-md flex items-center justify-center text-white font-bold text-lg ${getScoreColor(rating.score)}`}>
                         {rating.score}
                     </div>
                     <div>
@@ -102,11 +102,11 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ rating, user, onNavigateToLogin
                     </div>
                 </div>
             </div>
-            
+
             <p className="text-gray-700 text-sm mb-4 whitespace-pre-wrap">{rating.comment || <em className="text-gray-400">No written review.</em>}</p>
-            
+
             <div className="flex items-center gap-4 border-t border-gray-100 pt-3">
-                <button 
+                <button
                     onClick={handleLightUp}
                     className={`flex items-center text-sm font-medium transition-colors ${isLit ? 'text-yellow-500' : 'text-gray-500 hover:text-yellow-500'}`}
                 >
@@ -116,7 +116,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ rating, user, onNavigateToLogin
                     Light Up {lightUps > 0 && `(${lightUps})`}
                 </button>
 
-                <button 
+                <button
                     onClick={() => {
                         if (!user) onNavigateToLogin();
                         else setShowReplyInput(!showReplyInput);
@@ -152,13 +152,13 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ rating, user, onNavigateToLogin
                                 className="w-full p-2 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none resize-none h-20"
                             />
                             <div className="flex justify-end mt-2 gap-2">
-                                <button 
+                                <button
                                     onClick={() => setShowReplyInput(false)}
                                     className="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded"
                                 >
                                     Cancel
                                 </button>
-                                <button 
+                                <button
                                     onClick={handleReplySubmit}
                                     disabled={!replyText.trim() || isSubmittingReply}
                                     className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
@@ -187,59 +187,59 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ servant, user, onBack, onNavi
 
     return (
         <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 animate-fade-in pb-20">
-             {/* Header */}
-             <div className="mb-6">
-                <button 
+            {/* Header */}
+            <div className="mb-6">
+                <button
                     onClick={onBack}
                     className="flex items-center text-gray-600 hover:text-blue-600 transition-colors font-medium mb-4"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
                     Back to Servant Profile
                 </button>
 
                 <div className="flex items-center gap-4 border-b border-gray-200 pb-6">
-                     <img src={servant.face} alt={servant.name} className="w-16 h-16 rounded-lg border border-gray-200" />
-                     <div>
-                         <h1 className="text-2xl font-bold text-gray-900 brand-font">{servant.name}</h1>
-                         <p className="text-gray-500">User Reviews & Ratings</p>
-                     </div>
+                    <img src={servant.face} alt={servant.name} className="w-16 h-16 rounded-lg border border-gray-200" />
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 brand-font">{servant.name}</h1>
+                        <p className="text-gray-500">User Reviews & Ratings</p>
+                    </div>
                 </div>
-             </div>
+            </div>
 
-             {/* Rating System / My Review */}
-             <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mb-8">
+            {/* Rating System / My Review */}
+            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mb-8">
                 <h2 className="text-lg font-bold text-gray-800 mb-4">Your Rating</h2>
-                <RatingSystem 
+                <RatingSystem
                     servantId={servant.id}
                     user={user}
                     onNavigateToLogin={onNavigateToLogin}
                 />
-             </div>
+            </div>
 
-             {/* Reviews List */}
-             <div>
+            {/* Reviews List */}
+            <div>
                 <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    Community Reviews 
+                    Community Reviews
                     <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-full">{ratings.length}</span>
                 </h2>
-                
+
                 {ratings.length === 0 ? (
                     <div className="text-center py-10 bg-white rounded-lg border border-dashed border-gray-300">
                         <p className="text-gray-500">No reviews yet. Be the first to rate this Servant!</p>
                     </div>
                 ) : (
                     ratings.map(rating => (
-                        <ReviewItem 
-                            key={rating.id} 
-                            rating={rating} 
+                        <ReviewItem
+                            key={rating.id}
+                            rating={rating}
                             user={user}
                             onNavigateToLogin={onNavigateToLogin}
                         />
                     ))
                 )}
-             </div>
+            </div>
         </div>
     );
 };

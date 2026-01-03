@@ -15,19 +15,19 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onCancel, onNavigateToRe
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!username) {
-        setError('Please enter a username or email');
-        return;
+      setError('Please enter a username or email');
+      return;
     }
-    
+
     setIsLoggingIn(true);
     // Pass password to App for validation against Mock DB
     try {
-        await onLogin(username, password);
+      await onLogin(username, password);
     } catch (e: any) {
-        setError(e.message || 'Login failed');
-        setIsLoggingIn(false);
+      setError(e.message || 'Login failed');
+      setIsLoggingIn(false);
     }
   };
 
@@ -36,7 +36,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onCancel, onNavigateToRe
       <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-100">
         <h2 className="text-3xl font-bold mb-6 text-center text-gray-800 brand-font">Chaldea Security Organization</h2>
         <p className="text-center text-gray-500 mb-6">Enter your credentials to access the Spirit Origin List.</p>
-        
+
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm border border-red-200">
             {error}
@@ -82,29 +82,29 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onCancel, onNavigateToRe
             </button>
           </div>
         </form>
-        
+
         {/* Demo Credentials Hint */}
         <div className="mt-6 bg-blue-50 p-3 rounded-lg border border-blue-100 text-xs text-blue-800">
-            <p className="font-bold mb-1">Demo Admin Credentials:</p>
-            <div className="flex justify-between">
-                <span>Email: <code className="bg-white px-1 rounded border border-blue-200">admin@chaldea.org</code></span>
-            </div>
-            <div className="flex justify-between mt-1">
-                 <span>Password: <code className="bg-white px-1 rounded border border-blue-200">admin</code></span>
-            </div>
+          <p className="font-bold mb-1">Demo Admin Credentials:</p>
+          <div className="flex justify-between">
+            <span>Email: <code className="bg-white px-1 rounded border border-blue-200">admin@chaldea.org</code></span>
+          </div>
+          <div className="flex justify-between mt-1">
+            <span>Password: <code className="bg-white px-1 rounded border border-blue-200">admin</code></span>
+          </div>
         </div>
-        
+
         <div className="mt-6 pt-6 border-t border-gray-100 text-center">
-            <p className="text-sm text-gray-600 mb-2">New to Chaldea?</p>
-            <button 
-                onClick={onNavigateToRegister}
-                className="text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors flex items-center justify-center w-full"
-            >
-                Create a Master Account
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-            </button>
+          <p className="text-sm text-gray-600 mb-2">New to Chaldea?</p>
+          <button
+            onClick={onNavigateToRegister}
+            className="text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors flex items-center justify-center w-full"
+          >
+            Create a Master Account
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>

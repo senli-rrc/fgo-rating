@@ -86,8 +86,8 @@ const HomePage: React.FC<HomePageProps> = ({
               <button
                 onClick={() => setDisplayMode('grid')}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${displayMode === 'grid'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
                   }`}
               >
                 <div className="flex items-center space-x-2">
@@ -100,8 +100,8 @@ const HomePage: React.FC<HomePageProps> = ({
               <button
                 onClick={() => setDisplayMode('table')}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${displayMode === 'table'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
                   }`}
               >
                 <div className="flex items-center space-x-2">
@@ -121,8 +121,8 @@ const HomePage: React.FC<HomePageProps> = ({
                   onClick={() => onRegionChange(r)}
                   disabled={importing}
                   className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${region === r
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 disabled:opacity-50'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 disabled:opacity-50'
                     }`}
                 >
                   {r}

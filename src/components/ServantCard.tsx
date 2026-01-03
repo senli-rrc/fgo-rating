@@ -28,7 +28,8 @@ const ServantCard: React.FC<ServantCardProps> = ({ servant }) => {
     if (score === undefined) return 'bg-gray-200 text-gray-500';
     if (score >= 8) return 'bg-green-500 text-white';
     if (score >= 5) return 'bg-yellow-400 text-white';
-    return 'bg-red-500 text-white';
+    if (score >= 1) return 'bg-red-500 text-white';
+    return 'bg-gray-200 text-gray-500';
   };
 
   const classStyle = getClassColor(servant.className);
@@ -52,7 +53,7 @@ const ServantCard: React.FC<ServantCardProps> = ({ servant }) => {
 
         {/* Score Badge (Square) */}
         <div className={`absolute top-2 right-2 w-8 h-8 flex items-center justify-center font-bold text-sm shadow-md rounded-sm ${scoreColor}`}>
-             {servant.averageScore ?? <span className="text-[10px]">TBD</span>}
+             {servant.averageScore && servant.averageScore >= 1 ? servant.averageScore : <span className="text-[10px]">TBD</span>}
         </div>
 
         {/* ID at bottom */}

@@ -12,7 +12,8 @@ const ServantTable: React.FC<ServantTableProps> = ({ servants }) => {
     if (score === undefined) return 'bg-gray-200 text-gray-500';
     if (score >= 8) return 'bg-green-500 text-white';
     if (score >= 5) return 'bg-yellow-400 text-white';
-    return 'bg-red-500 text-white';
+    if (score >= 1) return 'bg-red-500 text-white';
+    return 'bg-gray-200 text-gray-500';
   };
 
   return (
@@ -75,7 +76,7 @@ const ServantTable: React.FC<ServantTableProps> = ({ servants }) => {
               </td>
               <td className="px-6 py-4 whitespace-nowrap flex justify-center">
                   <div className={`w-8 h-8 flex items-center justify-center font-bold text-sm shadow-sm rounded-sm ${getScoreColor(servant.averageScore)}`}>
-                     {servant.averageScore ?? <span className="text-[10px]">TBD</span>}
+                     {servant.averageScore && servant.averageScore >= 1 ? servant.averageScore : <span className="text-[10px]">TBD</span>}
                   </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500 font-mono">

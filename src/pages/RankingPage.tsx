@@ -89,15 +89,20 @@ const RankingPage: React.FC<RankingPageProps> = ({ servants, region, onRegionCha
                     <h1 className="text-3xl font-bold text-gray-900 brand-font">Servant Rankings</h1>
                     <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">LIVE</span>
                 </div>
-                <select
-                    value={region}
-                    onChange={(e) => onRegionChange(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                    <option value="JP">🇯🇵 JP Server</option>
-                    <option value="CN">🇨🇳 CN Server</option>
-                    <option value="EN">🇺🇸 EN Server</option>
-                </select>
+                <div className="flex bg-gray-200 p-1 rounded-lg">
+                    {['JP', 'CN', 'EN'].map(r => (
+                        <button
+                            key={r}
+                            onClick={() => onRegionChange(r)}
+                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${region === r
+                                ? 'bg-white text-blue-600 shadow-sm'
+                                : 'text-gray-600 hover:text-gray-900 disabled:opacity-50'
+                                }`}
+                        >
+                            {r}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Category Tabs (Scrollable) */}
@@ -106,8 +111,8 @@ const RankingPage: React.FC<RankingPageProps> = ({ servants, region, onRegionCha
                     <button
                         onClick={() => setActiveCategory('ALL')}
                         className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all ${activeCategory === 'ALL'
-                                ? 'bg-gray-900 text-white shadow-md'
-                                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                            ? 'bg-gray-900 text-white shadow-md'
+                            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
                             }`}
                     >
                         All Classes
@@ -117,8 +122,8 @@ const RankingPage: React.FC<RankingPageProps> = ({ servants, region, onRegionCha
                             key={c.id}
                             onClick={() => setActiveCategory(c.id)}
                             className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all ${activeCategory === c.id
-                                    ? 'bg-gray-900 text-white shadow-md'
-                                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                                ? 'bg-gray-900 text-white shadow-md'
+                                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
                                 }`}
                         >
                             {c.name}

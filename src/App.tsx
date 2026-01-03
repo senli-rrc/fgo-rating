@@ -64,7 +64,7 @@ const App: React.FC = () => {
     const data = await dbService.getAllServants(currentServer);
     // Don't recalculate averageScore - use the one from database (already calculated by trigger)
     // Ratings are shared across all servers, database has the correct average
-    
+
     // Sort by collectionNo descending
     data.sort((a, b) => b.collectionNo - a.collectionNo);
     setServants(data);

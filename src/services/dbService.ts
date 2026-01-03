@@ -747,7 +747,7 @@ export const dbService = {
       .eq('collectionNo', collectionNo)
       .not('comment', 'is', null)
       .neq('comment', '');
-    
+
     // Don't filter by server since ratings are shared across all servers
 
     const { data: ratings, error } = await query;

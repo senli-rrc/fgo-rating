@@ -49,8 +49,8 @@ const RankingPage: React.FC<RankingPageProps> = ({ servants, region, onRegionCha
                 return b.ratingCount - a.ratingCount;
             });
 
-            // Take top 50 for performance
-            const topServants = servantsWithData.slice(0, 50);
+            // Take top 20 for performance
+            const topServants = servantsWithData.slice(0, 20);
 
             // Fetch top comments for these top servants
             const promises = topServants.map(async (s) => {

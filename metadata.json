@@ -1,0 +1,5 @@
+{
+  "name": "fgo-rating",
+  "description": "A Fate/Grand Order servant database and rating application with Admin capabilities and AI-powered servant analysis.",
+  "requestFramePermissions": []
+}

@@ -24,11 +24,19 @@ const HomePage: React.FC<HomePageProps> = ({
   onQuickImport,
   onRegionChange
 }) => {
-  const [displayMode, setDisplayMode] = useState<'grid' | 'table'>('table');
+  const [displayMode, setDisplayMode] = useState<'grid' | 'table'>(() => {
+    const saved = localStorage.getItem('displayMode');
+    return (saved === 'grid' || saved === 'table') ? saved : 'table';
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [selectedRarity, setSelectedRarity] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Save display mode to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('displayMode', displayMode);
+  }, [displayMode]);
 
   // Reset pagination on filter change
   useEffect(() => {

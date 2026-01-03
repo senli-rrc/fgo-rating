@@ -405,11 +405,11 @@ const ServantDetailPage: React.FC<ServantDetailProps> = ({
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [activeTab, setActiveTab] = useState<'none' | 'np' | 'skills' | 'class' | 'append' | 'profile'>('np');
 
-    // Find servant from URL param
-    const servant = servants.find(s => s.id === Number(id));
+    // Find servant from URL param (using collectionNo)
+    const servant = servants.find(s => s.collectionNo === Number(id));
 
     // Find prev/next servants
-    const currentIndex = servants.findIndex(s => s.id === Number(id));
+    const currentIndex = servants.findIndex(s => s.collectionNo === Number(id));
     const prevServant = currentIndex > 0 ? servants[currentIndex - 1] : undefined;
     const nextServant = currentIndex < servants.length - 1 ? servants[currentIndex + 1] : undefined;
 
@@ -551,7 +551,7 @@ const ServantDetailPage: React.FC<ServantDetailProps> = ({
                 <div className="w-1/2 flex justify-start">
                     {prevServant ? (
                         <button
-                            onClick={() => navigate(`/servant/${prevServant.id}`)}
+                            onClick={() => navigate(`/servant/${prevServant.collectionNo}`)}
                             className="flex items-center text-gray-700 hover:text-blue-600 transition-colors group text-left"
                         >
                             <div className="bg-gray-100 group-hover:bg-blue-100 p-2 rounded-full mr-3 transition-colors">
@@ -574,7 +574,7 @@ const ServantDetailPage: React.FC<ServantDetailProps> = ({
                 <div className="w-1/2 flex justify-end">
                     {nextServant ? (
                         <button
-                            onClick={() => navigate(`/servant/${nextServant.id}`)}
+                            onClick={() => navigate(`/servant/${nextServant.collectionNo}`)}
                             className="flex items-center text-gray-700 hover:text-blue-600 transition-colors group text-right"
                         >
                             <div>
@@ -617,7 +617,7 @@ const ServantDetailPage: React.FC<ServantDetailProps> = ({
                         servantId={servant.id}
                         user={user || null}
                         onNavigateToLogin={() => navigate('/login')}
-                        onViewReviews={() => navigate(`/servant/${servant.id}/reviews`)}
+                        onViewReviews={() => navigate(`/servant/${servant.collectionNo}/reviews`)}
                     />
                 </div>
             </div>

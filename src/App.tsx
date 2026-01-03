@@ -179,7 +179,7 @@ const App: React.FC = () => {
         <main className="container mx-auto pb-12">
           <Routes>
             <Route path="/" element={<Navigate to="/servants" replace />} />
-            
+
             <Route path="/servants" element={
               <HomePage
                 servants={servants}
@@ -192,9 +192,9 @@ const App: React.FC = () => {
             } />
 
             <Route path="/servant/:id" element={
-              <ServantDetailPage 
-                servants={servants} 
-                user={user} 
+              <ServantDetailPage
+                servants={servants}
+                user={user}
                 isAdmin={user?.role === 'ADMIN'}
                 onEdit={(servant) => {
                   // Navigate to admin page - in the old version this would set editingServant

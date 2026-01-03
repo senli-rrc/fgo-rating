@@ -48,9 +48,9 @@ const ServantTable: React.FC<ServantTableProps> = ({ servants }) => {
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {servants.map((servant) => (
-            <tr 
-              key={servant.id} 
-              onClick={() => navigate(`/servant/${servant.id}`)}
+            <tr
+              key={servant.id}
+              onClick={() => navigate(`/servant/${servant.collectionNo}`)}
               className="hover:bg-blue-50 cursor-pointer transition-colors duration-150"
             >
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

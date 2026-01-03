@@ -128,7 +128,7 @@ const RankingPage: React.FC<RankingPageProps> = ({ servants }) => {
                     rankedServants.map((servant, index) => (
                         <Link
                             key={servant.id}
-                            to={`/servant/${servant.id}/reviews`}
+                            to={`/servant/${servant.collectionNo}/reviews`}
                             className="bg-white rounded-lg border border-gray-100 p-4 flex items-center gap-4 hover:shadow-lg transition-all duration-300 cursor-pointer group relative overflow-hidden"
                         >
                             {/* Rank Number */}

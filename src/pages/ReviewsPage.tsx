@@ -178,8 +178,8 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ servants, user }) => {
     const navigate = useNavigate();
     const [ratings, setRatings] = useState<Rating[]>([]);
 
-    // Find servant from URL param
-    const servant = servants.find(s => s.id === Number(id));
+    // Find servant from URL param (using collectionNo)
+    const servant = servants.find(s => s.collectionNo === Number(id));
 
     useEffect(() => {
         if (!servant) return;
@@ -211,7 +211,7 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ servants, user }) => {
             {/* Header */}
             <div className="mb-6">
                 <button
-                    onClick={() => navigate(`/servant/${servant.id}`)}
+                    onClick={() => navigate(`/servant/${servant.collectionNo}`)}
                     className="flex items-center text-gray-600 hover:text-blue-600 transition-colors font-medium mb-4"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

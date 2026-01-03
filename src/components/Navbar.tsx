@@ -14,8 +14,8 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
-            <Link 
-              to="/servants" 
+            <Link
+              to="/servants"
               className="flex-shrink-0 flex items-center cursor-pointer"
             >
               <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold mr-2">

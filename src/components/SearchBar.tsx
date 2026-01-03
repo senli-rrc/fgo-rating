@@ -77,7 +77,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                   key={servant.id}
                   className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-blue-50 flex items-center border-b border-gray-50 last:border-0"
                   onClick={() => {
-                    navigate(`/servant/${servant.id}`);
+                    navigate(`/servant/${servant.collectionNo}`);
                     setShowSuggestions(false);
                     onSearchChange(servant.name);
                   }}

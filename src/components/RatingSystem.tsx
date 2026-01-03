@@ -3,13 +3,14 @@ import { User, Rating } from '../types';
 import { dbService } from '../services/dbService';
 
 interface RatingSystemProps {
-  servantId: number;
+  collectionNo: number; // Changed from servantId
+  server: string; // Added server parameter
   user: User | null;
   onNavigateToLogin: () => void;
   onViewReviews?: () => void;
 }
 
-const RatingSystem: React.FC<RatingSystemProps> = ({ servantId, user, onNavigateToLogin, onViewReviews }) => {
+const RatingSystem: React.FC<RatingSystemProps> = ({ collectionNo, server, user, onNavigateToLogin, onViewReviews }) => {
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [userRating, setUserRating] = useState<Rating | null>(null);
   const [hoverScore, setHoverScore] = useState<number | null>(null);
@@ -21,14 +22,14 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ servantId, user, onNavigate
 
   useEffect(() => {
     loadRatings();
-  }, [servantId, user]);
+  }, [collectionNo, server, user]);
 
   const loadRatings = async () => {
-    const r = await dbService.getRatingsForServant(servantId);
+    const r = await dbService.getRatingsForServant(collectionNo, server);
     setRatings(r);
     
     if (user) {
-        const myRating = await dbService.getUserRating(user.id, servantId);
+        const myRating = await dbService.getUserRating(user.id, collectionNo, server);
         if (myRating) {
             setUserRating(myRating);
             setCommentText(myRating.comment || '');
@@ -77,7 +78,8 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ servantId, user, onNavigate
       const newRating = await dbService.saveRating({
           userId: user.id,
           username: user.username,
-          servantId,
+          collectionNo,
+          server: server as 'JP' | 'CN' | 'EN',
           score,
           comment: commentToSave
       });
@@ -97,7 +99,8 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ servantId, user, onNavigate
       await dbService.saveRating({
           userId: user.id,
           username: user.username,
-          servantId,
+          collectionNo,
+          server: server as 'JP' | 'CN' | 'EN',
           score: scoreToSave,
           comment: commentText
       });

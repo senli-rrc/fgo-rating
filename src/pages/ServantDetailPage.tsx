@@ -8,6 +8,7 @@ interface ServantDetailProps {
     isAdmin: boolean;
     onEdit: (servant: Servant) => void;
     user?: User | null;
+    region: string; // Add region prop
 }
 
 // Logic to extract relevant scaling rows (for Skills)
@@ -398,7 +399,8 @@ const ServantDetailPage: React.FC<ServantDetailProps> = ({
     servants,
     isAdmin,
     onEdit,
-    user
+    user,
+    region
 }) => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -614,7 +616,8 @@ const ServantDetailPage: React.FC<ServantDetailProps> = ({
 
                     {/* Rating System Widget */}
                     <RatingSystem
-                        servantId={servant.id}
+                        collectionNo={servant.collectionNo}
+                        server={region}
                         user={user || null}
                         onNavigateToLogin={() => navigate('/login')}
                         onViewReviews={() => navigate(`/servant/${servant.collectionNo}/reviews`)}

@@ -1,6 +1,20 @@
 import { Servant, User, Rating, Reply, LightUp, War } from '../types';
 import { supabase } from '../lib/supabase';
 
+// Helper to get the correct servant table based on server
+const getServantTable = (server: string): string => {
+  switch (server.toUpperCase()) {
+    case 'JP':
+      return 'servants_jp';
+    case 'CN':
+      return 'servants_cn';
+    case 'EN':
+      return 'servants_en';
+    default:
+      return 'servants_jp';
+  }
+};
+
 // Type definitions for Supabase responses
 interface SupabaseServant {
   id: number;
@@ -33,7 +47,8 @@ interface SupabaseUser {
 interface SupabaseRating {
   id: string;
   userId: string; // UUID
-  servantId: number;
+  collectionNo: number; // Changed from servantId
+  server: string; // Added server field
   score: number;
   comment: string | null;
   created_at: string;
@@ -110,9 +125,9 @@ const convertWar = (w: SupabaseWar): War => ({
 export const dbService = {
   // Initialize DB - with Supabase we don't need to create default data
   init: async () => {
-    // Check if we can connect to Supabase
+    // Check if we can connect to Supabase (check one of the new servant tables)
     try {
-      const { data, error } = await supabase.from('servants').select('count').limit(1);
+      const { data, error } = await supabase.from('servants_jp').select('count').limit(1);
       if (error) {
         console.error('Supabase connection error:', error);
       }
@@ -123,9 +138,10 @@ export const dbService = {
 
   // --- Servant Management ---
 
-  getAllServants: async (): Promise<Servant[]> => {
+  getAllServants: async (server: string = 'JP'): Promise<Servant[]> => {
+    const table = getServantTable(server);
     const { data, error } = await supabase
-      .from('servants')
+      .from(table)
       .select('*')
       .order('collectionNo', { ascending: true });
 
@@ -137,7 +153,8 @@ export const dbService = {
     return data ? data.map(convertServant) : [];
   },
 
-  saveServant: async (servant: Servant): Promise<Servant> => {
+  saveServant: async (servant: Servant, server: string = 'JP'): Promise<Servant> => {
+    const table = getServantTable(server);
     const servantData: any = {
       id: servant.id,
       collectionNo: servant.collectionNo,
@@ -167,7 +184,7 @@ export const dbService = {
     };
 
     const { data, error } = await supabase
-      .from('servants')
+      .from(table)
       .upsert(servantData)
       .select()
       .single();
@@ -180,9 +197,10 @@ export const dbService = {
     return convertServant(data);
   },
 
-  deleteServant: async (id: number): Promise<void> => {
+  deleteServant: async (id: number, server: string = 'JP'): Promise<void> => {
+    const table = getServantTable(server);
     const { error } = await supabase
-      .from('servants')
+      .from(table)
       .delete()
       .eq('id', id);
 
@@ -193,7 +211,8 @@ export const dbService = {
   },
 
   // Bulk upsert for the Atlas Academy Sync
-  bulkUpsert: async (servants: Servant[]): Promise<void> => {
+  bulkUpsert: async (servants: Servant[], server: string = 'JP'): Promise<void> => {
+    const table = getServantTable(server);
     const servantsData = servants.map(s => ({
       id: s.id,
       collectionNo: s.collectionNo,
@@ -223,7 +242,7 @@ export const dbService = {
     }));
 
     const { error } = await supabase
-      .from('servants')
+      .from(table)
       .upsert(servantsData);
 
     if (error) {
@@ -422,14 +441,21 @@ export const dbService = {
 
   // --- Rating System ---
 
-  getAllRatings: async (): Promise<Rating[]> => {
-    const { data, error } = await supabase
+  getAllRatings: async (server?: string): Promise<Rating[]> => {
+    let query = supabase
       .from('ratings')
       .select(`
         *,
         users (username)
       `)
       .order('created_at', { ascending: false });
+
+    // Filter by server if provided
+    if (server) {
+      query = query.eq('server', server);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching ratings:', error);
@@ -440,21 +466,23 @@ export const dbService = {
       id: r.id,
       userId: 1, // Placeholder
       username: (r.users as any)?.username || 'Unknown',
-      servantId: r.servantId,
+      collectionNo: r.collectionNo,
+      server: r.server as 'JP' | 'CN' | 'EN',
       score: r.score,
       comment: r.comment || '',
       timestamp: new Date(r.created_at).getTime()
     })) : [];
   },
 
-  getRatingsForServant: async (servantId: number): Promise<Rating[]> => {
+  getRatingsForServant: async (collectionNo: number, server: string): Promise<Rating[]> => {
     const { data, error } = await supabase
       .from('ratings')
       .select(`
         *,
         users (username)
       `)
-      .eq('servantId', servantId)
+      .eq('collectionNo', collectionNo)
+      .eq('server', server)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -466,14 +494,15 @@ export const dbService = {
       id: r.id,
       userId: 1,
       username: (r.users as any)?.username || 'Unknown',
-      servantId: r.servantId,
+      collectionNo: r.collectionNo,
+      server: r.server as 'JP' | 'CN' | 'EN',
       score: r.score,
       comment: r.comment || '',
       timestamp: new Date(r.created_at).getTime()
     })) : [];
   },
 
-  getUserRating: async (userId: number, servantId: number): Promise<Rating | undefined> => {
+  getUserRating: async (userId: number, collectionNo: number, server: string): Promise<Rating | undefined> => {
     // Get current user session
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return undefined;
@@ -485,7 +514,8 @@ export const dbService = {
         users (username)
       `)
       .eq('userId', user.id)
-      .eq('servantId', servantId)
+      .eq('collectionNo', collectionNo)
+      .eq('server', server)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(); // Use maybeSingle to handle 0 or 1 results
@@ -503,7 +533,8 @@ export const dbService = {
       id: data.id,
       userId: 1,
       username: (data.users as any)?.username || 'Unknown',
-      servantId: data.servantId,
+      collectionNo: data.collectionNo,
+      server: data.server as 'JP' | 'CN' | 'EN',
       score: data.score,
       comment: data.comment || '',
       timestamp: new Date(data.created_at).getTime()
@@ -521,11 +552,12 @@ export const dbService = {
       .from('ratings')
       .upsert({
         userId: user.id,
-        servantId: rating.servantId,
+        collectionNo: rating.collectionNo,
+        server: rating.server,
         score: rating.score,
         comment: rating.comment
       }, {
-        onConflict: 'userId,servantId' // Specify which columns define uniqueness
+        onConflict: 'userId,collectionNo,server' // Updated to match new unique constraint
       })
       .select(`
         *,
@@ -542,7 +574,8 @@ export const dbService = {
       id: data.id,
       userId: 1,
       username: (data.users as any)?.username || rating.username,
-      servantId: data.servantId,
+      collectionNo: data.collectionNo,
+      server: data.server as 'JP' | 'CN' | 'EN',
       score: data.score,
       comment: data.comment || '',
       timestamp: new Date(data.created_at).getTime()
@@ -709,7 +742,7 @@ export const dbService = {
   },
 
   // --- Top Rating Fetcher for Rankings ---
-  getTopReviewForServant: async (servantId: number): Promise<Rating | null> => {
+  getTopReviewForServant: async (collectionNo: number, server: string): Promise<Rating | null> => {
     // Get all ratings for this servant with comment
     const { data: ratings, error } = await supabase
       .from('ratings')
@@ -717,7 +750,8 @@ export const dbService = {
         *,
         users (username)
       `)
-      .eq('servantId', servantId)
+      .eq('collectionNo', collectionNo)
+      .eq('server', server)
       .not('comment', 'is', null)
       .neq('comment', '');
 
@@ -733,7 +767,8 @@ export const dbService = {
           id: r.id,
           userId: 1,
           username: (r.users as any)?.username || 'Unknown',
-          servantId: r.servantId,
+          collectionNo: r.collectionNo,
+          server: r.server as 'JP' | 'CN' | 'EN',
           score: r.score,
           comment: r.comment || '',
           timestamp: new Date(r.created_at).getTime(),

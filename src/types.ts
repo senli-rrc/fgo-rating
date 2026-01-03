@@ -120,7 +120,8 @@ export interface Rating {
   id: string;
   userId: number;
   username: string;
-  servantId: number;
+  collectionNo: number; // Changed from servantId to collectionNo
+  server: 'JP' | 'CN' | 'EN'; // Track which server's servant data
   score: number; // 1-10
   comment: string;
   timestamp: number;

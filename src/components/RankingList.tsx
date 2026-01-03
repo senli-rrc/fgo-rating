@@ -61,7 +61,7 @@ const RankingList: React.FC<RankingListProps> = ({ servants, onNavigateToReviews
 
       // Fetch top comments for these top servants
       const promises = topServants.map(async (s) => {
-          const topRating = await dbService.getTopReviewForServant(s.id);
+          const topRating = await dbService.getTopReviewForServant(s.collectionNo, 'JP');
           return {
               ...s,
               topComment: topRating?.comment

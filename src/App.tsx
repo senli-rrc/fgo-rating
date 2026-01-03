@@ -58,24 +58,24 @@ const App: React.FC = () => {
     }
   };
 
-  const loadServants = async () => {
+  const loadServants = async (currentServer: string = region) => {
     if (servants.length === 0) setLoading(true);
 
-    const data = await dbService.getAllServants();
-    const allRatings = await dbService.getAllRatings();
+    const data = await dbService.getAllServants(currentServer);
+    const allRatings = await dbService.getAllRatings(currentServer);
 
     const ratingMap = new Map<number, { sum: number; count: number }>();
     allRatings.forEach(r => {
-      if (!ratingMap.has(r.servantId)) {
-        ratingMap.set(r.servantId, { sum: 0, count: 0 });
+      if (!ratingMap.has(r.collectionNo)) {
+        ratingMap.set(r.collectionNo, { sum: 0, count: 0 });
       }
-      const entry = ratingMap.get(r.servantId)!;
+      const entry = ratingMap.get(r.collectionNo)!;
       entry.sum += r.score;
       entry.count += 1;
     });
 
     const servantsWithScores = data.map(s => {
-      const entry = ratingMap.get(s.id);
+      const entry = ratingMap.get(s.collectionNo);
       return {
         ...s,
         averageScore: entry ? parseFloat((entry.sum / entry.count).toFixed(1)) : undefined
@@ -120,25 +120,29 @@ const App: React.FC = () => {
   };
 
   const handleSaveServant = async (updatedServant: Servant) => {
-    await dbService.saveServant(updatedServant);
-    await loadServants();
+    await dbService.saveServant(updatedServant, region);
+    await loadServants(region);
     setEditingServant(null);
     alert('Servant saved successfully!');
   };
 
   const handleDeleteServant = async (id: number) => {
-    await dbService.deleteServant(id);
-    await loadServants();
+    await dbService.deleteServant(id, region);
+    await loadServants(region);
     setEditingServant(null);
   };
 
   const handleQuickImport = async () => {
     if (importing) return;
+    if (user?.role !== 'ADMIN') {
+      alert('Only admins can import data.');
+      return;
+    }
     setImporting(true);
     try {
       const newData = await fetchAtlasData(region, (msg) => console.log(msg));
-      await dbService.bulkUpsert(newData);
-      await loadServants();
+      await dbService.bulkUpsert(newData, region);
+      await loadServants(region);
     } catch (e) {
       console.error(e);
       alert('Failed to import data. Check console.');
@@ -150,16 +154,14 @@ const App: React.FC = () => {
   const handleRegionChange = async (newRegion: string) => {
     if (newRegion === region) return;
     setRegion(newRegion);
-    setImporting(true);
+    setLoading(true);
     try {
-      const newData = await fetchAtlasData(newRegion, (msg) => console.log(msg));
-      await dbService.bulkUpsert(newData);
-      await loadServants();
+      await loadServants(newRegion);
     } catch (e) {
       console.error(e);
       alert(`Failed to switch to ${newRegion} server data.`);
     } finally {
-      setImporting(false);
+      setLoading(false);
     }
   };
 
@@ -195,6 +197,7 @@ const App: React.FC = () => {
               <ServantDetailPage
                 servants={servants}
                 user={user}
+                region={region}
                 isAdmin={user?.role === 'ADMIN'}
                 onEdit={(servant) => {
                   // Navigate to admin page - in the old version this would set editingServant
@@ -205,7 +208,7 @@ const App: React.FC = () => {
             } />
 
             <Route path="/servant/:id/reviews" element={
-              <ReviewsPage servants={servants} user={user} />
+              <ReviewsPage servants={servants} user={user} region={region} />
             } />
 
             <Route path="/rankings" element={
@@ -224,7 +227,7 @@ const App: React.FC = () => {
                   onDelete={handleDeleteServant}
                   editingServant={editingServant}
                   onCancelEdit={() => setEditingServant(null)}
-                  onDataSync={loadServants}
+                  onDataSync={() => loadServants(region)}
                   region={region}
                 />
               ) : (

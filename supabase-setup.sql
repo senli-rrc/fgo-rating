@@ -1,8 +1,10 @@
 -- Supabase Database Setup for FGO Rating App
 
--- Create servants table
+-- Create separate servant tables for each server region
 -- Store most servant data in JSONB to avoid complex schema for nested skills/NPs
-CREATE TABLE IF NOT EXISTS public.servants (
+
+-- JP Server Servants
+CREATE TABLE IF NOT EXISTS public.servants_jp (
     id BIGINT PRIMARY KEY,
     "collectionNo" INT NOT NULL,
     name TEXT NOT NULL,
@@ -21,65 +23,47 @@ CREATE TABLE IF NOT EXISTS public.servants (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Add columns if they don't exist (for existing tables)
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                   WHERE table_schema = 'public'
-                   AND table_name = 'servants'
-                   AND column_name = 'averageScore') THEN
-        ALTER TABLE public.servants ADD COLUMN "averageScore" DECIMAL(4, 2) DEFAULT 0.00;
-    END IF;
+-- CN Server Servants
+CREATE TABLE IF NOT EXISTS public.servants_cn (
+    id BIGINT PRIMARY KEY,
+    "collectionNo" INT NOT NULL,
+    name TEXT NOT NULL,
+    "originalName" TEXT,
+    "className" TEXT NOT NULL,
+    rarity INT NOT NULL CHECK (rarity >= 0 AND rarity <= 5),
+    face TEXT,
+    attribute TEXT,
+    "atkMax" INT,
+    "hpMax" INT,
+    "atkBase" INT,
+    "hpBase" INT,
+    cost INT,
+    "averageScore" DECIMAL(4, 2) DEFAULT 0.00,
+    data JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                   WHERE table_schema = 'public'
-                   AND table_name = 'servants'
-                   AND column_name = 'originalName') THEN
-        ALTER TABLE public.servants ADD COLUMN "originalName" TEXT;
-    END IF;
+-- EN Server Servants
+CREATE TABLE IF NOT EXISTS public.servants_en (
+    id BIGINT PRIMARY KEY,
+    "collectionNo" INT NOT NULL,
+    name TEXT NOT NULL,
+    "originalName" TEXT,
+    "className" TEXT NOT NULL,
+    rarity INT NOT NULL CHECK (rarity >= 0 AND rarity <= 5),
+    face TEXT,
+    attribute TEXT,
+    "atkMax" INT,
+    "hpMax" INT,
+    "atkBase" INT,
+    "hpBase" INT,
+    cost INT,
+    "averageScore" DECIMAL(4, 2) DEFAULT 0.00,
+    data JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                   WHERE table_schema = 'public'
-                   AND table_name = 'servants'
-                   AND column_name = 'attribute') THEN
-        ALTER TABLE public.servants ADD COLUMN attribute TEXT;
-    END IF;
 
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                   WHERE table_schema = 'public'
-                   AND table_name = 'servants'
-                   AND column_name = 'atkMax') THEN
-        ALTER TABLE public.servants ADD COLUMN "atkMax" INT;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                   WHERE table_schema = 'public'
-                   AND table_name = 'servants'
-                   AND column_name = 'hpMax') THEN
-        ALTER TABLE public.servants ADD COLUMN "hpMax" INT;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                   WHERE table_schema = 'public'
-                   AND table_name = 'servants'
-                   AND column_name = 'atkBase') THEN
-        ALTER TABLE public.servants ADD COLUMN "atkBase" INT;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                   WHERE table_schema = 'public'
-                   AND table_name = 'servants'
-                   AND column_name = 'hpBase') THEN
-        ALTER TABLE public.servants ADD COLUMN "hpBase" INT;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                   WHERE table_schema = 'public'
-                   AND table_name = 'servants'
-                   AND column_name = 'cost') THEN
-        ALTER TABLE public.servants ADD COLUMN cost INT;
-    END IF;
-END $$;
 
 -- Create users table for user data
 -- Links to Supabase auth.users
@@ -104,15 +88,18 @@ BEGIN
 END $$;
 
 -- Create ratings table
+-- Ratings are tied to collection_no and server, not servant id
+-- This allows users to rate the same servant on different servers
 CREATE TABLE IF NOT EXISTS public.ratings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     "userId" UUID REFERENCES public.users(id) ON DELETE CASCADE,
-    "servantId" BIGINT REFERENCES servants(id) ON DELETE CASCADE,
+    "collectionNo" INT NOT NULL,
+    server TEXT NOT NULL CHECK (server IN ('JP', 'CN', 'EN')),
     score INT NOT NULL CHECK (score >= 1 AND score <= 10),
     comment TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE("userId", "servantId")
+    UNIQUE("userId", "collectionNo", server)
 );
 
 -- Create replies table for nested comments on ratings
@@ -146,11 +133,19 @@ CREATE TABLE IF NOT EXISTS public.wars (
 );
 
 -- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_servants_collection ON servants("collectionNo");
-CREATE INDEX IF NOT EXISTS idx_servants_class ON servants("className");
-CREATE INDEX IF NOT EXISTS idx_servants_rarity ON servants(rarity);
-CREATE INDEX IF NOT EXISTS idx_servants_average_score ON servants("averageScore");
-CREATE INDEX IF NOT EXISTS idx_ratings_servant ON ratings("servantId");
+CREATE INDEX IF NOT EXISTS idx_servants_jp_collection ON servants_jp("collectionNo");
+CREATE INDEX IF NOT EXISTS idx_servants_jp_class ON servants_jp("className");
+CREATE INDEX IF NOT EXISTS idx_servants_jp_rarity ON servants_jp(rarity);
+CREATE INDEX IF NOT EXISTS idx_servants_jp_average_score ON servants_jp("averageScore");
+CREATE INDEX IF NOT EXISTS idx_servants_cn_collection ON servants_cn("collectionNo");
+CREATE INDEX IF NOT EXISTS idx_servants_cn_class ON servants_cn("className");
+CREATE INDEX IF NOT EXISTS idx_servants_cn_rarity ON servants_cn(rarity);
+CREATE INDEX IF NOT EXISTS idx_servants_cn_average_score ON servants_cn("averageScore");
+CREATE INDEX IF NOT EXISTS idx_servants_en_collection ON servants_en("collectionNo");
+CREATE INDEX IF NOT EXISTS idx_servants_en_class ON servants_en("className");
+CREATE INDEX IF NOT EXISTS idx_servants_en_rarity ON servants_en(rarity);
+CREATE INDEX IF NOT EXISTS idx_servants_en_average_score ON servants_en("averageScore");
+CREATE INDEX IF NOT EXISTS idx_ratings_collection_server ON ratings("collectionNo", server);
 CREATE INDEX IF NOT EXISTS idx_ratings_user ON ratings("userId");
 CREATE INDEX IF NOT EXISTS idx_ratings_created ON ratings(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_replies_rating ON replies("ratingId");
@@ -160,22 +155,54 @@ CREATE INDEX IF NOT EXISTS idx_light_ups_user ON light_ups("userId");
 CREATE INDEX IF NOT EXISTS idx_wars_priority ON wars(priority);
 
 -- Enable Row Level Security (RLS)
-ALTER TABLE public.servants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.servants_jp ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.servants_cn ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.servants_en ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ratings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.replies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.light_ups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.wars ENABLE ROW LEVEL SECURITY;
 
--- Servants policies - public read, admin write
-DROP POLICY IF EXISTS "Allow public read access on servants" ON public.servants;
-CREATE POLICY "Allow public read access on servants"
-ON public.servants FOR SELECT
+-- Servants policies - public read, admin write (for all three tables)
+DROP POLICY IF EXISTS "Allow public read access on servants_jp" ON public.servants_jp;
+CREATE POLICY "Allow public read access on servants_jp"
+ON public.servants_jp FOR SELECT
 USING (true);
 
-DROP POLICY IF EXISTS "Allow admin write access on servants" ON public.servants;
-CREATE POLICY "Allow admin write access on servants"
-ON public.servants FOR ALL
+DROP POLICY IF EXISTS "Allow admin write access on servants_jp" ON public.servants_jp;
+CREATE POLICY "Allow admin write access on servants_jp"
+ON public.servants_jp FOR ALL
+USING (
+    EXISTS (
+        SELECT 1 FROM users
+        WHERE id = auth.uid() AND role = 'ADMIN'
+    )
+);
+
+DROP POLICY IF EXISTS "Allow public read access on servants_cn" ON public.servants_cn;
+CREATE POLICY "Allow public read access on servants_cn"
+ON public.servants_cn FOR SELECT
+USING (true);
+
+DROP POLICY IF EXISTS "Allow admin write access on servants_cn" ON public.servants_cn;
+CREATE POLICY "Allow admin write access on servants_cn"
+ON public.servants_cn FOR ALL
+USING (
+    EXISTS (
+        SELECT 1 FROM users
+        WHERE id = auth.uid() AND role = 'ADMIN'
+    )
+);
+
+DROP POLICY IF EXISTS "Allow public read access on servants_en" ON public.servants_en;
+CREATE POLICY "Allow public read access on servants_en"
+ON public.servants_en FOR SELECT
+USING (true);
+
+DROP POLICY IF EXISTS "Allow admin write access on servants_en" ON public.servants_en;
+CREATE POLICY "Allow admin write access on servants_en"
+ON public.servants_en FOR ALL
 USING (
     EXISTS (
         SELECT 1 FROM users
@@ -274,7 +301,9 @@ USING (
 );
 
 -- Grant permissions
-GRANT SELECT ON public.servants TO anon, authenticated;
+GRANT SELECT ON public.servants_jp TO anon, authenticated;
+GRANT SELECT ON public.servants_cn TO anon, authenticated;
+GRANT SELECT ON public.servants_en TO anon, authenticated;
 GRANT SELECT ON public.users TO anon, authenticated;
 GRANT SELECT ON public.ratings TO anon, authenticated;
 GRANT SELECT ON public.replies TO anon, authenticated;
@@ -305,17 +334,44 @@ CREATE TRIGGER update_ratings_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 
--- Function to update servant average score
+-- Function to update servant average score (for multi-server architecture)
 CREATE OR REPLACE FUNCTION public.update_servant_average_score()
 RETURNS TRIGGER AS $$
+DECLARE
+  srv TEXT;
+  coll_no INT;
 BEGIN
-  UPDATE public.servants
-  SET "averageScore" = (
-    SELECT COALESCE(AVG(score), 0)
-    FROM public.ratings
-    WHERE "servantId" = COALESCE(NEW."servantId", OLD."servantId")
-  )
-  WHERE id = COALESCE(NEW."servantId", OLD."servantId");
+  -- Get values
+  srv := COALESCE(NEW.server, OLD.server);
+  coll_no := COALESCE(NEW."collectionNo", OLD."collectionNo");
+  
+  -- Update the appropriate servant table based on server
+  IF srv = 'JP' THEN
+    UPDATE public.servants_jp
+    SET "averageScore" = (
+      SELECT COALESCE(ROUND(AVG(score)::numeric, 2), 0)
+      FROM public.ratings
+      WHERE "collectionNo" = coll_no AND server = 'JP'
+    )
+    WHERE "collectionNo" = coll_no;
+  ELSIF srv = 'CN' THEN
+    UPDATE public.servants_cn
+    SET "averageScore" = (
+      SELECT COALESCE(ROUND(AVG(score)::numeric, 2), 0)
+      FROM public.ratings
+      WHERE "collectionNo" = coll_no AND server = 'CN'
+    )
+    WHERE "collectionNo" = coll_no;
+  ELSIF srv = 'EN' THEN
+    UPDATE public.servants_en
+    SET "averageScore" = (
+      SELECT COALESCE(ROUND(AVG(score)::numeric, 2), 0)
+      FROM public.ratings
+      WHERE "collectionNo" = coll_no AND server = 'EN'
+    )
+    WHERE "collectionNo" = coll_no;
+  END IF;
+  
   RETURN COALESCE(NEW, OLD);
 END;
 $$ LANGUAGE plpgsql;

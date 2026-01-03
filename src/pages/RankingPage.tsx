@@ -29,14 +29,14 @@ const RankingPage: React.FC<RankingPageProps> = ({ servants }) => {
             }
 
             const ratings = await dbService.getAllRatings();
-            const ratingMap = new Map<number, number>(); // servantId -> count
+            const ratingMap = new Map<number, number>(); // collectionNo -> count
             ratings.forEach(r => {
-                ratingMap.set(r.servantId, (ratingMap.get(r.servantId) || 0) + 1);
+                ratingMap.set(r.collectionNo, (ratingMap.get(r.collectionNo) || 0) + 1);
             });
 
             const servantsWithData = filtered.map(s => ({
                 ...s,
-                ratingCount: ratingMap.get(s.id) || 0
+                ratingCount: ratingMap.get(s.collectionNo) || 0
             }));
 
             // Sort
@@ -52,7 +52,7 @@ const RankingPage: React.FC<RankingPageProps> = ({ servants }) => {
 
             // Fetch top comments for these top servants
             const promises = topServants.map(async (s) => {
-                const topRating = await dbService.getTopReviewForServant(s.id);
+                const topRating = await dbService.getTopReviewForServant(s.collectionNo, 'JP');
                 return {
                     ...s,
                     topComment: topRating?.comment

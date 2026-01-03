@@ -463,7 +463,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                 {ratings.map(r => (
                                     <tr key={r.id}>
                                         <td className="px-6 py-4 text-sm font-medium text-gray-900">{r.username} <span className="text-gray-400 text-xs">(ID: {r.userId})</span></td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">{r.servantId}</td>
+                                        <td className="px-6 py-4 text-sm text-gray-500">{r.collectionNo} ({r.server})</td>
                                         <td className="px-6 py-4 text-sm font-bold text-gray-900">{r.score}</td>
                                         <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={r.comment}>{r.comment || '-'}</td>
                                         <td className="px-6 py-4 text-sm text-gray-500">{new Date(r.timestamp).toLocaleDateString()}</td>

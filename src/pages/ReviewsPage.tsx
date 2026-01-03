@@ -7,6 +7,7 @@ import RatingSystem from '../components/RatingSystem';
 interface ReviewsPageProps {
     servants: Servant[];
     user: User | null;
+    region: string; // Add region prop
 }
 
 interface ReviewItemProps {
@@ -173,7 +174,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({ rating, user }) => {
     );
 };
 
-const ReviewsPage: React.FC<ReviewsPageProps> = ({ servants, user }) => {
+const ReviewsPage: React.FC<ReviewsPageProps> = ({ servants, user, region }) => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [ratings, setRatings] = useState<Rating[]>([]);
@@ -184,11 +185,11 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ servants, user }) => {
     useEffect(() => {
         if (!servant) return;
         const fetchRatings = async () => {
-            const data = await dbService.getRatingsForServant(servant.id);
+            const data = await dbService.getRatingsForServant(servant.collectionNo, region);
             setRatings(data);
         };
         fetchRatings();
-    }, [servant?.id]);
+    }, [servant?.collectionNo, region]);
 
     if (!servant) {
         return (
@@ -233,7 +234,8 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ servants, user }) => {
             <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mb-8">
                 <h2 className="text-lg font-bold text-gray-800 mb-4">Your Rating</h2>
                 <RatingSystem
-                    servantId={servant.id}
+                    collectionNo={servant.collectionNo}
+                    server={region}
                     user={user}
                     onNavigateToLogin={() => navigate('/login')}
                 />

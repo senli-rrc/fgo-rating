@@ -2,7 +2,7 @@
 
 A comprehensive rating and review platform for Fate/Grand Order servants, built with modern web technologies and powered by Supabase.
 
-![FGO Rating App](https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6)
+![FGO Rating App]
 
 ## ✨ Features
 
@@ -28,7 +28,7 @@ A comprehensive rating and review platform for Fate/Grand Order servants, built 
 
 ## 📋 Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 - A Supabase account (free tier available)
 
@@ -46,18 +46,18 @@ A comprehensive rating and review platform for Fate/Grand Order servants, built 
    ```
 
 3. **Set up Supabase**
-   
+
    a. Create a new project at [supabase.com](https://supabase.com)
-   
+
    b. Go to **SQL Editor** and run `supabase-setup.sql`
-   
+
    c. Get your project credentials from **Settings** → **API**
 
 4. **Configure environment variables**
    ```bash
    cp .env.example .env
    ```
-   
+
    Edit `.env` and add your Supabase credentials:
    ```env
    VITE_SUPABASE_URL=https://your-project.supabase.co
@@ -70,7 +70,7 @@ A comprehensive rating and review platform for Fate/Grand Order servants, built 
    ```
 
 6. **Open your browser**
-   
+
    Navigate to `http://localhost:5173`
 
 ## 📁 Project Structure

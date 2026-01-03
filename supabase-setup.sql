@@ -22,60 +22,60 @@ CREATE TABLE IF NOT EXISTS public.servants (
 );
 
 -- Add columns if they don't exist (for existing tables)
-DO $$ 
+DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_schema = 'public' 
-                   AND table_name = 'servants' 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public'
+                   AND table_name = 'servants'
                    AND column_name = 'averageScore') THEN
         ALTER TABLE public.servants ADD COLUMN "averageScore" DECIMAL(4, 2) DEFAULT 0.00;
     END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_schema = 'public' 
-                   AND table_name = 'servants' 
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public'
+                   AND table_name = 'servants'
                    AND column_name = 'originalName') THEN
         ALTER TABLE public.servants ADD COLUMN "originalName" TEXT;
     END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_schema = 'public' 
-                   AND table_name = 'servants' 
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public'
+                   AND table_name = 'servants'
                    AND column_name = 'attribute') THEN
         ALTER TABLE public.servants ADD COLUMN attribute TEXT;
     END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_schema = 'public' 
-                   AND table_name = 'servants' 
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public'
+                   AND table_name = 'servants'
                    AND column_name = 'atkMax') THEN
         ALTER TABLE public.servants ADD COLUMN "atkMax" INT;
     END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_schema = 'public' 
-                   AND table_name = 'servants' 
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public'
+                   AND table_name = 'servants'
                    AND column_name = 'hpMax') THEN
         ALTER TABLE public.servants ADD COLUMN "hpMax" INT;
     END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_schema = 'public' 
-                   AND table_name = 'servants' 
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public'
+                   AND table_name = 'servants'
                    AND column_name = 'atkBase') THEN
         ALTER TABLE public.servants ADD COLUMN "atkBase" INT;
     END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_schema = 'public' 
-                   AND table_name = 'servants' 
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public'
+                   AND table_name = 'servants'
                    AND column_name = 'hpBase') THEN
         ALTER TABLE public.servants ADD COLUMN "hpBase" INT;
     END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_schema = 'public' 
-                   AND table_name = 'servants' 
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public'
+                   AND table_name = 'servants'
                    AND column_name = 'cost') THEN
         ALTER TABLE public.servants ADD COLUMN cost INT;
     END IF;
@@ -93,11 +93,11 @@ CREATE TABLE IF NOT EXISTS public.users (
 );
 
 -- Add status column if it doesn't exist (for existing tables)
-DO $$ 
+DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_schema = 'public' 
-                   AND table_name = 'users' 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public'
+                   AND table_name = 'users'
                    AND column_name = 'status') THEN
         ALTER TABLE public.users ADD COLUMN status TEXT DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'SUSPENDED'));
     END IF;

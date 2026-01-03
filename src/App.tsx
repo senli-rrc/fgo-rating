@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import { Servant, User, ViewState } from './types';
 import { dbService } from './services/dbService';
 import { fetchAtlasData } from './services/atlasService';
+import { supabase } from './lib/supabase';
 
 // Import Pages
 import HomePage from './pages/HomePage';
@@ -25,6 +26,43 @@ const App: React.FC = () => {
   const [region, setRegion] = useState<string>('JP'); // 'JP', 'CN', 'EN'
   
   const [editingServant, setEditingServant] = useState<Servant | null>(null);
+
+  // Check for existing session on mount
+  useEffect(() => {
+    checkSession();
+  }, []);
+
+  const checkSession = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        // Fetch user profile from database
+        const { data: userProfile, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (!error && userProfile) {
+          setUser({
+            id: 1, // Placeholder for compatibility
+            username: userProfile.username,
+            email: userProfile.email,
+            role: userProfile.role,
+            status: userProfile.status,
+            createdAt: new Date(userProfile.created_at).getTime()
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error checking session:', error);
+    } finally {
+      // Initialize DB and load servants
+      await dbService.init();
+      await loadServants();
+    }
+  };
 
   // Initial Data Load
   useEffect(() => {
@@ -97,10 +135,15 @@ const App: React.FC = () => {
      }
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    setCurrentView(ViewState.HOME);
-    setEditingServant(null);
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setCurrentView(ViewState.HOME);
+      setEditingServant(null);
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
   };
 
   const handleServantClick = (servant: Servant) => {

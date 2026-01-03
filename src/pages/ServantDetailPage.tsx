@@ -343,8 +343,8 @@ const SkillGroupDisplay: React.FC<{ skills: SkillModel[] }> = ({ skills }) => {
                             key={s.id}
                             onClick={() => setSelectedSkillId(s.id)}
                             className={`px-3 py-1 text-xs rounded-full border transition-colors ${isSelected
-                                    ? 'bg-yellow-100 border-yellow-400 text-yellow-800 font-bold'
-                                    : 'bg-gray-100 border-gray-200 text-gray-500 hover:bg-gray-200'
+                                ? 'bg-yellow-100 border-yellow-400 text-yellow-800 font-bold'
+                                : 'bg-gray-100 border-gray-200 text-gray-500 hover:bg-gray-200'
                                 }`}
                         >
                             {label}
@@ -381,8 +381,8 @@ const NpGroupDisplay: React.FC<{ nps: NpModel[] }> = ({ nps }) => {
                             key={n.id}
                             onClick={() => setSelectedNpId(n.id)}
                             className={`px-3 py-1 text-xs rounded-full border transition-colors ${isSelected
-                                    ? 'bg-yellow-100 border-yellow-400 text-yellow-800 font-bold'
-                                    : 'bg-gray-100 border-gray-200 text-gray-500 hover:bg-gray-200'
+                                ? 'bg-yellow-100 border-yellow-400 text-yellow-800 font-bold'
+                                : 'bg-gray-100 border-gray-200 text-gray-500 hover:bg-gray-200'
                                 }`}
                         >
                             {label}
@@ -477,8 +477,8 @@ const ServantDetailPage: React.FC<ServantDetailProps> = ({
         <button
             onClick={() => setActiveTab(current === id ? 'none' : id as any)}
             className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors border-b-2 ${current === id
-                    ? 'bg-white text-blue-600 border-blue-600'
-                    : 'bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200 hover:text-gray-900'
+                ? 'bg-white text-blue-600 border-blue-600'
+                : 'bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200 hover:text-gray-900'
                 }`}
         >
             {label}
@@ -600,9 +600,9 @@ const ServantDetailPage: React.FC<ServantDetailProps> = ({
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
                     <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 flex items-center justify-center rounded-full text-white font-bold shadow-sm ${servant.className.toLowerCase() === 'saber' ? 'bg-blue-600' :
-                                servant.className.toLowerCase() === 'archer' ? 'bg-red-600' :
-                                    servant.className.toLowerCase() === 'lancer' ? 'bg-green-600' :
-                                        'bg-gray-600'
+                            servant.className.toLowerCase() === 'archer' ? 'bg-red-600' :
+                                servant.className.toLowerCase() === 'lancer' ? 'bg-green-600' :
+                                    'bg-gray-600'
                             }`}>
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -626,7 +626,58 @@ const ServantDetailPage: React.FC<ServantDetailProps> = ({
             </div>
 
             <div className="flex flex-col lg:flex-row gap-8 mb-8 items-start">
-                {/* Left Column: Data Table */}
+                {/* Left Column: CharaGraph Carousel */}
+                <div className="w-full lg:w-1/2 flex flex-col items-center">
+                    <div className="relative w-full max-w-md aspect-[0.7] bg-gray-100 rounded-lg shadow-xl overflow-hidden group">
+                        <img
+                            src={images[currentImageIndex]}
+                            alt={`Portrait ${currentImageIndex + 1}`}
+                            className="w-full h-full object-cover object-top transition-opacity duration-500"
+                            onError={(e) => {
+                                (e.target as HTMLImageElement).src = servant.face; // Fallback to icon
+                            }}
+                        />
+
+                        {/* Navigation Arrows */}
+                        {images.length > 1 && (
+                            <>
+                                <button
+                                    onClick={handlePrevImage}
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/60 text-white p-2 rounded-full backdrop-blur-sm transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
+                                <button
+                                    onClick={handleNextImage}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/60 text-white p-2 rounded-full backdrop-blur-sm transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+
+                                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+                                    {images.map((_, idx) => (
+                                        <div
+                                            key={idx}
+                                            className={`w-2 h-2 rounded-full shadow ${idx === currentImageIndex ? 'bg-white' : 'bg-white/40'}`}
+                                        />
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        <div className="absolute top-4 right-4">
+                            <div className="bg-black/60 backdrop-blur text-white text-xs px-2 py-1 rounded font-mono">
+                                Portrait {currentImageIndex + 1}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Column: Data Table */}
                 <div className="w-full lg:w-1/2">
                     <div className="bg-white border border-gray-300 rounded shadow-sm overflow-hidden">
                         <div className="grid grid-cols-4 divide-x divide-y divide-gray-200 text-sm">
@@ -687,57 +738,6 @@ const ServantDetailPage: React.FC<ServantDetailProps> = ({
                         </div>
                     </div>
 
-                </div>
-
-                {/* Right Column: CharaGraph Carousel */}
-                <div className="w-full lg:w-1/2 flex flex-col items-center">
-                    <div className="relative w-full max-w-md aspect-[0.7] bg-gray-100 rounded-lg shadow-xl overflow-hidden group">
-                        <img
-                            src={images[currentImageIndex]}
-                            alt={`Portrait ${currentImageIndex + 1}`}
-                            className="w-full h-full object-cover object-top transition-opacity duration-500"
-                            onError={(e) => {
-                                (e.target as HTMLImageElement).src = servant.face; // Fallback to icon
-                            }}
-                        />
-
-                        {/* Navigation Arrows */}
-                        {images.length > 1 && (
-                            <>
-                                <button
-                                    onClick={handlePrevImage}
-                                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/60 text-white p-2 rounded-full backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                    </svg>
-                                </button>
-                                <button
-                                    onClick={handleNextImage}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/60 text-white p-2 rounded-full backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </button>
-
-                                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-                                    {images.map((_, idx) => (
-                                        <div
-                                            key={idx}
-                                            className={`w-2 h-2 rounded-full shadow ${idx === currentImageIndex ? 'bg-white' : 'bg-white/40'}`}
-                                        />
-                                    ))}
-                                </div>
-                            </>
-                        )}
-
-                        <div className="absolute top-4 right-4">
-                            <div className="bg-black/60 backdrop-blur text-white text-xs px-2 py-1 rounded font-mono">
-                                Portrait {currentImageIndex + 1}
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 

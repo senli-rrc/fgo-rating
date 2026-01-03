@@ -467,7 +467,6 @@ export const dbService = {
       userId: 1, // Placeholder
       username: (r.users as any)?.username || 'Unknown',
       collectionNo: r.collectionNo,
-      server: r.server as 'JP' | 'CN' | 'EN',
       score: r.score,
       comment: r.comment || '',
       timestamp: new Date(r.created_at).getTime()
@@ -482,7 +481,6 @@ export const dbService = {
         users (username)
       `)
       .eq('collectionNo', collectionNo)
-      .eq('server', server)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -495,7 +493,6 @@ export const dbService = {
       userId: 1,
       username: (r.users as any)?.username || 'Unknown',
       collectionNo: r.collectionNo,
-      server: r.server as 'JP' | 'CN' | 'EN',
       score: r.score,
       comment: r.comment || '',
       timestamp: new Date(r.created_at).getTime()
@@ -515,7 +512,6 @@ export const dbService = {
       `)
       .eq('userId', user.id)
       .eq('collectionNo', collectionNo)
-      .eq('server', server)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(); // Use maybeSingle to handle 0 or 1 results
@@ -534,7 +530,6 @@ export const dbService = {
       userId: 1,
       username: (data.users as any)?.username || 'Unknown',
       collectionNo: data.collectionNo,
-      server: data.server as 'JP' | 'CN' | 'EN',
       score: data.score,
       comment: data.comment || '',
       timestamp: new Date(data.created_at).getTime()
@@ -557,7 +552,7 @@ export const dbService = {
         score: rating.score,
         comment: rating.comment
       }, {
-        onConflict: 'user_id,collection_no,server' // Match database column names (snake_case)
+        onConflict: 'userId,collectionNo' // One rating per user per servant across all servers
       })
       .select(`
         *,
@@ -575,7 +570,6 @@ export const dbService = {
       userId: 1,
       username: (data.users as any)?.username || rating.username,
       collectionNo: data.collectionNo,
-      server: data.server as 'JP' | 'CN' | 'EN',
       score: data.score,
       comment: data.comment || '',
       timestamp: new Date(data.created_at).getTime()
@@ -742,18 +736,21 @@ export const dbService = {
   },
 
   // --- Top Rating Fetcher for Rankings ---
-  getTopReviewForServant: async (collectionNo: number, server: string): Promise<Rating | null> => {
+  getTopReviewForServant: async (collectionNo: number, server?: string): Promise<Rating | null> => {
     // Get all ratings for this servant with comment
-    const { data: ratings, error } = await supabase
+    let query = supabase
       .from('ratings')
       .select(`
         *,
         users (username)
       `)
       .eq('collectionNo', collectionNo)
-      .eq('server', server)
       .not('comment', 'is', null)
       .neq('comment', '');
+    
+    // Don't filter by server since ratings are shared across all servers
+
+    const { data: ratings, error } = await query;
 
     if (error || !ratings || ratings.length === 0) {
       return null;
@@ -768,7 +765,6 @@ export const dbService = {
           userId: 1,
           username: (r.users as any)?.username || 'Unknown',
           collectionNo: r.collectionNo,
-          server: r.server as 'JP' | 'CN' | 'EN',
           score: r.score,
           comment: r.comment || '',
           timestamp: new Date(r.created_at).getTime(),

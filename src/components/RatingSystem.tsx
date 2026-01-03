@@ -79,7 +79,7 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ collectionNo, server, user,
           userId: user.id,
           username: user.username,
           collectionNo,
-          server: server as 'JP' | 'CN' | 'EN',
+          server: server as 'JP' | 'CN' | 'EN', // Track for reference but not used in unique constraint
           score,
           comment: commentToSave
       });
@@ -100,7 +100,7 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ collectionNo, server, user,
           userId: user.id,
           username: user.username,
           collectionNo,
-          server: server as 'JP' | 'CN' | 'EN',
+          server: server as 'JP' | 'CN' | 'EN', // Track for reference but not used in unique constraint
           score: scoreToSave,
           comment: commentText
       });

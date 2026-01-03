@@ -30,7 +30,7 @@ const RankingPage: React.FC<RankingPageProps> = ({ servants, region, onRegionCha
                 filtered = servants.filter(s => s.classId === activeCategory);
             }
 
-            const ratings = await dbService.getAllRatings(region);
+            const ratings = await dbService.getAllRatings();
             const ratingMap = new Map<number, number>(); // collectionNo -> count
             ratings.forEach(r => {
                 ratingMap.set(r.collectionNo, (ratingMap.get(r.collectionNo) || 0) + 1);
@@ -54,7 +54,7 @@ const RankingPage: React.FC<RankingPageProps> = ({ servants, region, onRegionCha
 
             // Fetch top comments for these top servants
             const promises = topServants.map(async (s) => {
-                const topRating = await dbService.getTopReviewForServant(s.collectionNo, region);
+                const topRating = await dbService.getTopReviewForServant(s.collectionNo);
                 return {
                     ...s,
                     topComment: topRating?.comment

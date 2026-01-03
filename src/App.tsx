@@ -62,28 +62,12 @@ const App: React.FC = () => {
     if (servants.length === 0) setLoading(true);
 
     const data = await dbService.getAllServants(currentServer);
-    const allRatings = await dbService.getAllRatings(currentServer);
-
-    const ratingMap = new Map<number, { sum: number; count: number }>();
-    allRatings.forEach(r => {
-      if (!ratingMap.has(r.collectionNo)) {
-        ratingMap.set(r.collectionNo, { sum: 0, count: 0 });
-      }
-      const entry = ratingMap.get(r.collectionNo)!;
-      entry.sum += r.score;
-      entry.count += 1;
-    });
-
-    const servantsWithScores = data.map(s => {
-      const entry = ratingMap.get(s.collectionNo);
-      return {
-        ...s,
-        averageScore: entry ? parseFloat((entry.sum / entry.count).toFixed(1)) : undefined
-      };
-    });
-
-    servantsWithScores.sort((a, b) => b.collectionNo - a.collectionNo);
-    setServants(servantsWithScores);
+    // Don't recalculate averageScore - use the one from database (already calculated by trigger)
+    // Ratings are shared across all servers, database has the correct average
+    
+    // Sort by collectionNo descending
+    data.sort((a, b) => b.collectionNo - a.collectionNo);
+    setServants(data);
     setLoading(false);
   };
 

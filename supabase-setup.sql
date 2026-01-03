@@ -88,8 +88,8 @@ BEGIN
 END $$;
 
 -- Create ratings table
--- Ratings are tied to collection_no and server, not servant id
--- This allows users to rate the same servant on different servers
+-- Ratings are tied to collection_no only - one rating per user per servant across all servers
+-- The server field tracks which server the user was viewing when they rated
 CREATE TABLE IF NOT EXISTS public.ratings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     "userId" UUID REFERENCES public.users(id) ON DELETE CASCADE,
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS public.ratings (
     comment TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE("userId", "collectionNo", server)
+    UNIQUE("userId", "collectionNo")
 );
 
 -- Create replies table for nested comments on ratings
@@ -145,7 +145,7 @@ CREATE INDEX IF NOT EXISTS idx_servants_en_collection ON servants_en("collection
 CREATE INDEX IF NOT EXISTS idx_servants_en_class ON servants_en("className");
 CREATE INDEX IF NOT EXISTS idx_servants_en_rarity ON servants_en(rarity);
 CREATE INDEX IF NOT EXISTS idx_servants_en_average_score ON servants_en("averageScore");
-CREATE INDEX IF NOT EXISTS idx_ratings_collection_server ON ratings("collectionNo", server);
+CREATE INDEX IF NOT EXISTS idx_ratings_collection ON ratings("collectionNo");
 CREATE INDEX IF NOT EXISTS idx_ratings_user ON ratings("userId");
 CREATE INDEX IF NOT EXISTS idx_ratings_created ON ratings(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_replies_rating ON replies("ratingId");
@@ -334,43 +334,35 @@ CREATE TRIGGER update_ratings_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 
--- Function to update servant average score (for multi-server architecture)
+-- Function to update servant average score (for shared rating system)
+-- Since ratings are shared across servers, all servant tables get the same average
 CREATE OR REPLACE FUNCTION public.update_servant_average_score()
 RETURNS TRIGGER AS $$
 DECLARE
-  srv TEXT;
   coll_no INT;
+  avg_score DECIMAL(4, 2);
 BEGIN
-  -- Get values
-  srv := COALESCE(NEW.server, OLD.server);
+  -- Get collectionNo
   coll_no := COALESCE(NEW."collectionNo", OLD."collectionNo");
 
-  -- Update the appropriate servant table based on server
-  IF srv = 'JP' THEN
-    UPDATE public.servants_jp
-    SET "averageScore" = (
-      SELECT COALESCE(ROUND(AVG(score)::numeric, 2), 0)
-      FROM public.ratings
-      WHERE "collectionNo" = coll_no AND server = 'JP'
-    )
-    WHERE "collectionNo" = coll_no;
-  ELSIF srv = 'CN' THEN
-    UPDATE public.servants_cn
-    SET "averageScore" = (
-      SELECT COALESCE(ROUND(AVG(score)::numeric, 2), 0)
-      FROM public.ratings
-      WHERE "collectionNo" = coll_no AND server = 'CN'
-    )
-    WHERE "collectionNo" = coll_no;
-  ELSIF srv = 'EN' THEN
-    UPDATE public.servants_en
-    SET "averageScore" = (
-      SELECT COALESCE(ROUND(AVG(score)::numeric, 2), 0)
-      FROM public.ratings
-      WHERE "collectionNo" = coll_no AND server = 'EN'
-    )
-    WHERE "collectionNo" = coll_no;
-  END IF;
+  -- Calculate average score from ALL ratings (not filtered by server)
+  SELECT ROUND(AVG(score)::numeric, 2)
+  INTO avg_score
+  FROM public.ratings
+  WHERE "collectionNo" = coll_no;
+
+  -- Update ALL servant tables with the same average score
+  UPDATE public.servants_jp
+  SET "averageScore" = avg_score
+  WHERE "collectionNo" = coll_no;
+
+  UPDATE public.servants_cn
+  SET "averageScore" = avg_score
+  WHERE "collectionNo" = coll_no;
+
+  UPDATE public.servants_en
+  SET "averageScore" = avg_score
+  WHERE "collectionNo" = coll_no;
 
   RETURN COALESCE(NEW, OLD);
 END;

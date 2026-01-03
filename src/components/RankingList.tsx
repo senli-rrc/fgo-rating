@@ -38,14 +38,14 @@ const RankingList: React.FC<RankingListProps> = ({ servants, onNavigateToReviews
       // Ideally App should pass count in Servant extension, but let's fetch counts here to be accurate.
 
       const ratings = await dbService.getAllRatings();
-      const ratingMap = new Map<number, number>(); // servantId -> count
+      const ratingMap = new Map<number, number>(); // collectionNo -> count
       ratings.forEach(r => {
-          ratingMap.set(r.servantId, (ratingMap.get(r.servantId) || 0) + 1);
+          ratingMap.set(r.collectionNo, (ratingMap.get(r.collectionNo) || 0) + 1);
       });
 
       const servantsWithData = filtered.map(s => ({
           ...s,
-          ratingCount: ratingMap.get(s.id) || 0
+          ratingCount: ratingMap.get(s.collectionNo) || 0
       }));
 
       // Sort
@@ -61,7 +61,7 @@ const RankingList: React.FC<RankingListProps> = ({ servants, onNavigateToReviews
 
       // Fetch top comments for these top servants
       const promises = topServants.map(async (s) => {
-          const topRating = await dbService.getTopReviewForServant(s.collectionNo, 'JP');
+          const topRating = await dbService.getTopReviewForServant(s.collectionNo);
           return {
               ...s,
               topComment: topRating?.comment

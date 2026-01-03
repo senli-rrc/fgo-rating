@@ -46,7 +46,7 @@ interface AtlasServant {
   id: number;
   collectionNo: number;
   name: string;
-  originalName: string; 
+  originalName: string;
   className: string;
   type: string;
   rarity: number;
@@ -58,7 +58,7 @@ interface AtlasServant {
   attribute: string;
   cards: string[];
   traits: { id: number; name: string }[];
-  face?: string; 
+  face?: string;
   extraAssets?: {
     charaGraph?: {
       ascension?: Record<string, string>;
@@ -120,7 +120,7 @@ export const transformAtlasData = (data: any[], region: string, limit: number = 
       // Construct URLs
       // Use dynamic region for fallback, though Atlas often stores assets in a shared path or JP structure
       const faceUrl = s.face || `https://static.atlasacademy.io/${apiRegion}/Faces/f_${s.id}0.png`;
-      
+
       // Construct Ascension Images (CharaGraph)
       // Use extraAssets to get correct ascension and costume images
       const charaGraph = s.extraAssets?.charaGraph || {};
@@ -131,7 +131,7 @@ export const transformAtlasData = (data: any[], region: string, limit: number = 
       const ascensionImages = Object.keys(ascensionMap)
         .sort((a, b) => parseInt(a) - parseInt(b))
         .map(key => ascensionMap[key]);
-      
+
       // Get costumes
       const costumeImages = Object.values(costumeMap);
 
@@ -146,7 +146,7 @@ export const transformAtlasData = (data: any[], region: string, limit: number = 
               `https://static.atlasacademy.io/${apiRegion}/CharaGraph/${s.id}/${s.id}d.png`
           ];
       }
-      
+
       const mapFunction = (f: AtlasFunction) => ({
         funcId: f.funcId,
         funcType: f.funcType,
@@ -180,7 +180,7 @@ export const transformAtlasData = (data: any[], region: string, limit: number = 
 
       const skills = s.skills ? s.skills.map(sk => mapSkill(sk)) : [];
       const classPassive = s.classPassive ? s.classPassive.map(sk => mapSkill(sk)) : [];
-      
+
       // Fix for Append Skills: they are wrapped in an object { num, skill }
       const appendPassive = s.appendPassive ? s.appendPassive.map(ap => mapSkill(ap.skill, ap.num)) : [];
 
@@ -195,8 +195,8 @@ export const transformAtlasData = (data: any[], region: string, limit: number = 
       return {
         id: s.id,
         collectionNo: s.collectionNo,
-        name: s.name, 
-        originalName: s.originalName || s.name, 
+        name: s.name,
+        originalName: s.originalName || s.name,
         type: 'Normal',
         rarity: s.rarity,
         classId: classId,
@@ -226,17 +226,17 @@ export const fetchAtlasData = async (region: string, onProgress: (msg: string) =
   try {
     const apiRegion = getApiRegion(region);
     const url = `https://api.atlasacademy.io/export/${apiRegion}/nice_servant.json`;
-    
+
     onProgress(`Fetching data from Atlas Academy API (${region} Server)...`);
-    
+
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Failed to fetch from Atlas Academy (${region})`);
-    
+
     onProgress('Parsing data...');
     const data: AtlasServant[] = await response.json();
-    
+
     // Limit to 50 for development/debugging as requested
-    const MAX_RECORDS = 50; 
+    const MAX_RECORDS = 1500;
     onProgress(`Processing records...`);
 
     return transformAtlasData(data, region, MAX_RECORDS);
@@ -251,12 +251,12 @@ export const fetchWarData = async (region: string): Promise<War[]> => {
     try {
         const apiRegion = getApiRegion(region);
         const url = `https://api.atlasacademy.io/export/${apiRegion}/nice_war.json`;
-        
+
         const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch War data from Atlas Academy');
-        
+
         const data: AtlasWar[] = await response.json();
-        
+
         // Return only index 0-32 as requested
         return data.slice(0, 33).map(w => ({
             id: w.id,

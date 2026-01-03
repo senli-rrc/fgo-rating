@@ -35,9 +35,12 @@ dist-ssr
 
 # Database and credentials
 *.db
-*.sql
 *.sqlite
 *.sqlite3
+
+# Keep setup SQL files for documentation
+!supabase-setup.sql
+!supabase-migration-*.sql
 
 # OS
 .DS_Store

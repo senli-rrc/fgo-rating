@@ -8,6 +8,8 @@ interface SearchBarProps {
   onSearchChange: (term: string) => void;
   selectedClassId: number | null;
   onClassChange: (classId: number | null) => void;
+  selectedRarity: number | null;
+  onRarityChange: (rarity: number | null) => void;
   allServants: Servant[];
 }
 
@@ -16,6 +18,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
   onSearchChange,
   selectedClassId,
   onClassChange,
+  selectedRarity,
+  onRarityChange,
   allServants
 }) => {
   const navigate = useNavigate();
@@ -42,12 +46,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
     }
   };
 
-  // Logic for suggestions: Must match search term AND selected class (if any)
+  // Logic for suggestions: Must match search term AND selected class/rarity (if any)
   const suggestions = allServants.filter(s => {
     const matchesName = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         (s.originalName && s.originalName.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesClass = selectedClassId ? s.classId === selectedClassId : true;
-    return matchesName && matchesClass;
+    const matchesRarity = selectedRarity ? s.rarity === selectedRarity : true;
+    return matchesName && matchesClass && matchesRarity;
   }).slice(0, 5); // Limit to 5 suggestions
 
   return (
@@ -97,7 +102,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         </div>
 
         {/* Class Filter */}
-        <div className="w-full md:w-64">
+        <div className="w-full md:w-48">
           <select
             className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border"
             value={selectedClassId || ''}
@@ -107,6 +112,23 @@ const SearchBar: React.FC<SearchBarProps> = ({
             {CLASSES.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
+          </select>
+        </div>
+
+        {/* Rarity Filter */}
+        <div className="w-full md:w-40">
+          <select
+            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border"
+            value={selectedRarity || ''}
+            onChange={(e) => onRarityChange(e.target.value ? parseInt(e.target.value) : null)}
+          >
+            <option value="">All Rarities</option>
+            <option value="5">★★★★★ (5)</option>
+            <option value="4">★★★★ (4)</option>
+            <option value="3">★★★ (3)</option>
+            <option value="2">★★ (2)</option>
+            <option value="1">★ (1)</option>
+            <option value="0">☆ (0)</option>
           </select>
         </div>
       </div>

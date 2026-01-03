@@ -24,15 +24,24 @@ const HomePage: React.FC<HomePageProps> = ({
   onQuickImport,
   onRegionChange
 }) => {
-  const [displayMode, setDisplayMode] = useState<'grid' | 'table'>('table');
+  const [displayMode, setDisplayMode] = useState<'grid' | 'table'>(() => {
+    const saved = localStorage.getItem('displayMode');
+    return (saved === 'grid' || saved === 'table') ? saved : 'table';
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [selectedRarity, setSelectedRarity] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Save display mode to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('displayMode', displayMode);
+  }, [displayMode]);
 
   // Reset pagination on filter change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedClassId, displayMode]);
+  }, [searchTerm, selectedClassId, selectedRarity, displayMode]);
 
   // Filter Logic
   const filteredServants = servants.filter(servant => {
@@ -40,7 +49,8 @@ const HomePage: React.FC<HomePageProps> = ({
     const matchesName = servant.name.toLowerCase().includes(term) ||
       (servant.originalName && servant.originalName.toLowerCase().includes(term));
     const matchesClass = selectedClassId ? servant.classId === selectedClassId : true;
-    return matchesName && matchesClass;
+    const matchesRarity = selectedRarity ? servant.rarity === selectedRarity : true;
+    return matchesName && matchesClass && matchesRarity;
   });
 
   const limit = displayMode === 'table' ? TABLE_ITEMS_PER_PAGE : ITEMS_PER_PAGE;
@@ -134,6 +144,8 @@ const HomePage: React.FC<HomePageProps> = ({
             onSearchChange={setSearchTerm}
             selectedClassId={selectedClassId}
             onClassChange={setSelectedClassId}
+            selectedRarity={selectedRarity}
+            onRarityChange={setSelectedRarity}
             allServants={servants}
           />
 
@@ -151,7 +163,7 @@ const HomePage: React.FC<HomePageProps> = ({
           ) : (
             <>
               {displayMode === 'grid' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                   {paginatedServants.map(servant => (
                     <ServantCard
                       key={servant.id}

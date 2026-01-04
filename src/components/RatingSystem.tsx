@@ -103,7 +103,7 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ collectionNo, server, user,
 
       // Sanitize and validate comment
       const sanitizedComment = sanitizeComment(commentText);
-      
+
       if (sanitizedComment.length > 5000) {
           alert('Comment is too long. Maximum length is 5000 characters.');
           setIsSubmitting(false);

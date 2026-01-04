@@ -39,7 +39,7 @@ export function validateUrl(url: string, allowedDomains: string[] = ALLOWED_DOMA
 
   // Trim and remove dangerous characters
   const trimmedUrl = url.trim();
-  
+
   // Check for obvious malicious patterns
   if (trimmedUrl.includes('<') || trimmedUrl.includes('>') || trimmedUrl.includes('javascript:')) {
     console.warn('[Security] Blocked potentially malicious URL:', trimmedUrl);
@@ -48,7 +48,7 @@ export function validateUrl(url: string, allowedDomains: string[] = ALLOWED_DOMA
 
   try {
     const urlObj = new URL(trimmedUrl);
-    
+
     // Validate protocol
     if (!ALLOWED_PROTOCOLS.includes(urlObj.protocol)) {
       console.warn('[Security] Blocked non-HTTP(S) protocol:', urlObj.protocol);
@@ -118,7 +118,7 @@ export function validateUsername(username: string): boolean {
   }
 
   const trimmed = username.trim();
-  
+
   // Length: 3-30 characters
   if (trimmed.length < 3 || trimmed.length > 30) {
     return false;
@@ -140,7 +140,7 @@ export function validateEmail(email: string): boolean {
   }
 
   const trimmed = email.trim();
-  
+
   // Basic email regex (not perfect but good enough)
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(trimmed) && trimmed.length <= 255;
@@ -168,7 +168,7 @@ export function sanitizeComment(comment: string): string {
  */
 export function validateNumber(value: any, min: number = -Infinity, max: number = Infinity): number | null {
   const num = Number(value);
-  
+
   if (isNaN(num) || !isFinite(num)) {
     return null;
   }

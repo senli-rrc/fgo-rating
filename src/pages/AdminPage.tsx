@@ -69,6 +69,9 @@ const AdminPage: React.FC<AdminPageProps> = ({
     // War Edit State
     const [editingWar, setEditingWar] = useState<War | null>(null);
 
+    // User Edit State
+    const [editingUser, setEditingUser] = useState<User | null>(null);
+
     useEffect(() => {
         // Load data based on tab
         if (activeTab === 'USERS') loadUsers();
@@ -243,8 +246,24 @@ const AdminPage: React.FC<AdminPageProps> = ({
     // --- User Logic ---
     const toggleUserStatus = async (user: User) => {
         const newStatus = user.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
-        await dbService.saveUser({ ...user, status: newStatus });
+        const newAccessLevel = newStatus === 'SUSPENDED' ? 0 : 1; // Set to 0 when suspended
+        await dbService.saveUser({ ...user, status: newStatus, accessLevel: newAccessLevel });
         loadUsers();
+    };
+
+    const handleUserEdit = (user: User) => {
+        setEditingUser({ ...user });
+    };
+
+    const handleUserSave = async () => {
+        if (!editingUser) return;
+        await dbService.saveUser(editingUser);
+        setEditingUser(null);
+        loadUsers();
+    };
+
+    const handleUserCancel = () => {
+        setEditingUser(null);
     };
 
     // --- War Logic ---
@@ -266,8 +285,8 @@ const AdminPage: React.FC<AdminPageProps> = ({
                         key={tab}
                         onClick={() => setActiveTab(tab)}
                         className={`flex-1 py-3 text-sm font-bold rounded-md transition-all ${activeTab === tab
-                                ? 'bg-blue-600 text-white shadow'
-                                : 'text-gray-600 hover:bg-gray-100'
+                            ? 'bg-blue-600 text-white shadow'
+                            : 'text-gray-600 hover:bg-gray-100'
                             }`}
                     >
                         {tab}
@@ -523,15 +542,56 @@ const AdminPage: React.FC<AdminPageProps> = ({
 
             {/* USERS TAB */}
             {activeTab === 'USERS' && (
-                <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-                    <div className="overflow-x-auto">
+                <div className="space-y-6">
+                    {editingUser && (
+                        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+                            <h3 className="font-bold text-xl mb-4">Edit User: {editingUser.username}</h3>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">UID</label>
+                                    <input 
+                                        type="number" 
+                                        className="w-full border p-2 rounded" 
+                                        value={editingUser.uid || ''} 
+                                        onChange={e => setEditingUser({ ...editingUser, uid: parseInt(e.target.value) || 0 })} 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Username</label>
+                                    <input 
+                                        className="w-full border p-2 rounded" 
+                                        value={editingUser.username} 
+                                        onChange={e => setEditingUser({ ...editingUser, username: e.target.value })} 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Role</label>
+                                    <select 
+                                        className="w-full border p-2 rounded" 
+                                        value={editingUser.role} 
+                                        onChange={e => setEditingUser({ ...editingUser, role: parseInt(e.target.value), accessLevel: parseInt(e.target.value) === 0 ? 1 : 99 })}
+                                    >
+                                        <option value={0}>USER (0)</option>
+                                    </select>
+                                    <p className="text-xs text-gray-500 mt-1">Note: Admin role can only be changed in database directly</p>
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                    <button type="button" onClick={handleUserCancel} className="px-4 py-2 border rounded">Cancel</button>
+                                    <button onClick={handleUserSave} className="px-4 py-2 bg-blue-600 text-white rounded">Save Changes</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+                        <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UID</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Access</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reg IP</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -540,11 +600,18 @@ const AdminPage: React.FC<AdminPageProps> = ({
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {users.map(u => (
                                     <tr key={u.id}>
-                                        <td className="px-6 py-4 text-sm text-gray-500">{u.id}</td>
+                                        <td className="px-6 py-4 text-sm text-gray-500 font-mono">#{u.uid}</td>
                                         <td className="px-6 py-4 text-sm font-bold text-gray-900">{u.username}</td>
                                         <td className="px-6 py-4 text-sm text-gray-500">{u.email}</td>
                                         <td className="px-6 py-4 text-sm text-gray-500">
-                                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${u.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>{u.role}</span>
+                                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${u.role === 1 ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
+                                                {u.role === 1 ? 'ADMIN' : 'USER'} ({u.role})
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                            <span className={`px-2 py-0.5 rounded text-xs font-mono ${u.accessLevel === 0 ? 'bg-red-50 text-red-800' : 'bg-blue-50 text-blue-800'}`}>
+                                                Lv.{u.accessLevel}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4 text-sm">
                                             <span className={`px-2 py-0.5 rounded text-xs font-bold ${u.status === 'SUSPENDED' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
@@ -553,13 +620,21 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                         </td>
                                         <td className="px-6 py-4 text-sm font-mono text-gray-500">{u.registerIp || '-'}</td>
                                         <td className="px-6 py-4 text-right text-sm">
-                                            {u.role !== 'ADMIN' && (
-                                                <button
-                                                    onClick={() => toggleUserStatus(u)}
-                                                    className={`font-medium ${u.status === 'SUSPENDED' ? 'text-green-600 hover:text-green-900' : 'text-red-600 hover:text-red-900'}`}
-                                                >
-                                                    {u.status === 'SUSPENDED' ? 'Activate' : 'Suspend'}
-                                                </button>
+                                            {u.role !== 1 && (
+                                                <div className="flex justify-end gap-2">
+                                                    <button
+                                                        onClick={() => handleUserEdit(u)}
+                                                        className="font-medium text-blue-600 hover:text-blue-900"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => toggleUserStatus(u)}
+                                                        className={`font-medium ${u.status === 'SUSPENDED' ? 'text-green-600 hover:text-green-900' : 'text-red-600 hover:text-red-900'}`}
+                                                    >
+                                                        {u.status === 'SUSPENDED' ? 'Activate' : 'Suspend'}
+                                                    </button>
+                                                </div>
                                             )}
                                         </td>
                                     </tr>
@@ -567,6 +642,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                             </tbody>
                         </table>
                     </div>
+                </div>
                 </div>
             )}
 

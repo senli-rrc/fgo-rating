@@ -549,26 +549,26 @@ const AdminPage: React.FC<AdminPageProps> = ({
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">UID</label>
-                                    <input 
-                                        type="number" 
-                                        className="w-full border p-2 rounded" 
-                                        value={editingUser.uid || ''} 
-                                        onChange={e => setEditingUser({ ...editingUser, uid: parseInt(e.target.value) || 0 })} 
+                                    <input
+                                        type="number"
+                                        className="w-full border p-2 rounded"
+                                        value={editingUser.uid || ''}
+                                        onChange={e => setEditingUser({ ...editingUser, uid: parseInt(e.target.value) || 0 })}
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Username</label>
-                                    <input 
-                                        className="w-full border p-2 rounded" 
-                                        value={editingUser.username} 
-                                        onChange={e => setEditingUser({ ...editingUser, username: e.target.value })} 
+                                    <input
+                                        className="w-full border p-2 rounded"
+                                        value={editingUser.username}
+                                        onChange={e => setEditingUser({ ...editingUser, username: e.target.value })}
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Role</label>
-                                    <select 
-                                        className="w-full border p-2 rounded" 
-                                        value={editingUser.role} 
+                                    <select
+                                        className="w-full border p-2 rounded"
+                                        value={editingUser.role}
                                         onChange={e => setEditingUser({ ...editingUser, role: parseInt(e.target.value), accessLevel: parseInt(e.target.value) === 0 ? 1 : 99 })}
                                     >
                                         <option value={0}>USER (0)</option>

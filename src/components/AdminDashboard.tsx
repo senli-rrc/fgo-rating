@@ -3,6 +3,7 @@ import { Servant, Attribute, ClassModel } from '../types';
 import { CLASSES } from '../services/mockData';
 import { fetchAtlasData } from '../services/atlasService';
 import { dbService } from '../services/dbService';
+import { validateServantData, sanitizeText, validateUrl, ALLOWED_DOMAINS } from '../utils/validation';
 
 interface AdminDashboardProps {
   servants: Servant[];
@@ -26,6 +27,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Sync State
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const initialFormState: Servant = {
     id: 0,
@@ -66,6 +68,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    
+    // Clear validation errors when user edits
+    setValidationErrors([]);
+    
     setFormData(prev => {
         if (name === 'classId') {
             const selectedClass = CLASSES.find(c => c.id === parseInt(value));
@@ -75,6 +81,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 className: selectedClass ? selectedClass.name : prev.className
             }
         }
+        
+        // Sanitize text inputs
+        if (name === 'name' || name === 'originalName') {
+            return {
+                ...prev,
+                [name]: sanitizeText(value, 200)
+            };
+        }
+        
+        // Validate and sanitize URL inputs
+        if (name === 'face') {
+            return {
+                ...prev,
+                [name]: value // We'll validate on submit
+            };
+        }
+        
         const numericFields = ['rarity', 'atkMax', 'hpMax', 'atkBase', 'hpBase', 'cost', 'collectionNo'];
         return {
             ...prev,
@@ -84,10 +107,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleAddTrait = () => {
-    if (traitInput.trim() && !formData.traits.includes(traitInput.trim())) {
+    const sanitized = sanitizeText(traitInput, 100);
+    if (sanitized && !formData.traits.includes(sanitized)) {
       setFormData(prev => ({
         ...prev,
-        traits: [...prev.traits, traitInput.trim()]
+        traits: [...prev.traits, sanitized]
       }));
       setTraitInput('');
     }
@@ -108,6 +132,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Clear previous validation errors
+    setValidationErrors([]);
+    
+    // Validate servant data
+    const validation = validateServantData(formData);
+    
+    if (!validation.valid) {
+      setValidationErrors(validation.errors);
+      alert('Please fix validation errors:\n\n' + validation.errors.join('\n'));
+      return;
+    }
+    
+    // Additional URL validation for face image
+    if (formData.face) {
+      const validatedUrl = validateUrl(formData.face);
+      if (!validatedUrl) {
+        setValidationErrors([
+          `Face image URL is invalid or from untrusted domain. Allowed domains: ${ALLOWED_DOMAINS.join(', ')}`
+        ]);
+        alert('Invalid or unsafe face image URL. Please use a URL from an allowed domain.');
+        return;
+      }
+      // Update with validated URL
+      formData.face = validatedUrl;
+    }
+    
     onSave(formData);
     if (!editingServant) {
        const maxId = servants.reduce((max, s) => Math.max(max, s.id), 0); 
@@ -196,6 +247,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
             )}
         </div>
+
+        {/* Validation Errors Display */}
+        {validationErrors.length > 0 && (
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded">
+            <div className="flex items-start">
+              <svg className="h-5 w-5 text-red-500 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
+              </svg>
+              <div>
+                <h3 className="text-sm font-semibold text-red-800 mb-1">Validation Errors</h3>
+                <ul className="text-sm text-red-700 list-disc list-inside">
+                  {validationErrors.map((error, idx) => (
+                    <li key={idx}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

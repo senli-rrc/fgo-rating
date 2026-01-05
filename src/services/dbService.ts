@@ -37,10 +37,14 @@ interface SupabaseServant {
 
 interface SupabaseUser {
   id: string; // UUID from Supabase auth
+  uid: number; // Sequential ID for display
   username: string;
   email: string;
-  role: 'USER' | 'ADMIN';
+  role: 'USER' | 'ADMIN'; // Old text column (for backward compatibility)
+  role_int: number; // New integer role (0 = USER, 1 = ADMIN)
+  access_level: number; // Access level hierarchy
   status: 'ACTIVE' | 'SUSPENDED';
+  register_ip?: string;
   created_at: string;
 }
 
@@ -326,23 +330,58 @@ export const dbService = {
       return [];
     }
 
-    // Convert UUID to number for compatibility with existing code
-    // In production, you should update User type to use string IDs
-    return data ? data.map((u, idx) => ({
-      id: idx + 1, // Temporary numeric ID for compatibility
+    // Store the actual UUID as a string in the id field (casting to number type for compatibility)
+    // The id field will actually contain the UUID string despite the type definition
+    return data ? data.map((u) => ({
+      id: u.id as any, // Store UUID string (type workaround)
+      uid: u.uid, // Sequential ID for display
       username: u.username,
       email: u.email,
-      role: u.role,
+      role: u.role_int ?? (u.role === 'ADMIN' ? 1 : 0), // Use role_int, fallback to old role
+      accessLevel: u.access_level ?? (u.role === 'ADMIN' ? 99 : 1),
       status: u.status,
+      registerIp: u.register_ip,
       createdAt: new Date(u.created_at).getTime()
     })) : [];
   },
 
   saveUser: async (user: User): Promise<User> => {
-    // This would typically be handled by Supabase Auth
-    // For now, we'll just update the users table
-    console.warn('saveUser: Direct user modification should use Supabase Auth');
-    return user;
+    // Update user data in the users table
+    // user.id contains the UUID string (despite the type definition)
+    // When status is SUSPENDED, set access_level to 0 (no permissions)
+    const updateData: any = {
+      status: user.status,
+      role_int: user.role,
+      access_level: user.status === 'SUSPENDED' ? 0 : user.accessLevel
+    };
+
+    // Allow updating username and uid if provided
+    if (user.username) updateData.username = user.username;
+    if (user.uid !== undefined) updateData.uid = user.uid;
+
+    const { data, error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', user.id as any) // Use UUID for lookup
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating user:', error);
+      throw error;
+    }
+
+    return {
+      id: data.id as any,
+      uid: data.uid,
+      username: data.username,
+      email: data.email,
+      role: data.role_int,
+      accessLevel: data.access_level,
+      status: data.status,
+      registerIp: data.register_ip,
+      createdAt: new Date(data.created_at).getTime()
+    };
   },
 
   authenticateUser: async (usernameOrEmail: string, password: string): Promise<User | null> => {

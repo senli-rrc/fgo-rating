@@ -3,6 +3,7 @@ import { Servant, Attribute, ClassModel } from '../types';
 import { CLASSES } from '../services/mockData';
 import { fetchAtlasData } from '../services/atlasService';
 import { dbService } from '../services/dbService';
+import { validateServantData, sanitizeText, validateUrl, ALLOWED_DOMAINS } from '../utils/validation';
 
 interface AdminDashboardProps {
   servants: Servant[];
@@ -14,11 +15,11 @@ interface AdminDashboardProps {
   region?: string;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ 
-  servants, 
-  onSave, 
-  onDelete, 
-  editingServant, 
+const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  servants,
+  onSave,
+  onDelete,
+  editingServant,
   onCancelEdit,
   onDataSync,
   region = 'JP'
@@ -26,6 +27,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Sync State
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const initialFormState: Servant = {
     id: 0,
@@ -66,6 +68,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+
+    // Clear validation errors when user edits
+    setValidationErrors([]);
+
     setFormData(prev => {
         if (name === 'classId') {
             const selectedClass = CLASSES.find(c => c.id === parseInt(value));
@@ -75,6 +81,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 className: selectedClass ? selectedClass.name : prev.className
             }
         }
+
+        // Sanitize text inputs
+        if (name === 'name' || name === 'originalName') {
+            return {
+                ...prev,
+                [name]: sanitizeText(value, 200)
+            };
+        }
+
+        // Validate and sanitize URL inputs
+        if (name === 'face') {
+            return {
+                ...prev,
+                [name]: value // We'll validate on submit
+            };
+        }
+
         const numericFields = ['rarity', 'atkMax', 'hpMax', 'atkBase', 'hpBase', 'cost', 'collectionNo'];
         return {
             ...prev,
@@ -84,10 +107,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleAddTrait = () => {
-    if (traitInput.trim() && !formData.traits.includes(traitInput.trim())) {
+    const sanitized = sanitizeText(traitInput, 100);
+    if (sanitized && !formData.traits.includes(sanitized)) {
       setFormData(prev => ({
         ...prev,
-        traits: [...prev.traits, traitInput.trim()]
+        traits: [...prev.traits, sanitized]
       }));
       setTraitInput('');
     }
@@ -108,9 +132,36 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Clear previous validation errors
+    setValidationErrors([]);
+
+    // Validate servant data
+    const validation = validateServantData(formData);
+
+    if (!validation.valid) {
+      setValidationErrors(validation.errors);
+      alert('Please fix validation errors:\n\n' + validation.errors.join('\n'));
+      return;
+    }
+
+    // Additional URL validation for face image
+    if (formData.face) {
+      const validatedUrl = validateUrl(formData.face);
+      if (!validatedUrl) {
+        setValidationErrors([
+          `Face image URL is invalid or from untrusted domain. Allowed domains: ${ALLOWED_DOMAINS.join(', ')}`
+        ]);
+        alert('Invalid or unsafe face image URL. Please use a URL from an allowed domain.');
+        return;
+      }
+      // Update with validated URL
+      formData.face = validatedUrl;
+    }
+
     onSave(formData);
     if (!editingServant) {
-       const maxId = servants.reduce((max, s) => Math.max(max, s.id), 0); 
+       const maxId = servants.reduce((max, s) => Math.max(max, s.id), 0);
        setFormData({ ...initialFormState, id: maxId + 1 + 1, collectionNo: maxId + 1 + 1 });
     }
   };
@@ -119,10 +170,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (!confirm('This will fetch data from Atlas Academy and update your database. This might overwrite existing data. Continue?')) {
         return;
     }
-    
+
     setIsSyncing(true);
     setSyncMessage('Initializing connection...');
-    
+
     try {
         const newData = await fetchAtlasData(region, (msg) => setSyncMessage(msg));
         setSyncMessage(`Saving ${newData.length} records to database...`);
@@ -142,7 +193,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
-        
+
       {/* Atlas Integration Section */}
       <div className="bg-gradient-to-r from-indigo-900 to-blue-900 p-6 rounded-lg shadow-lg text-white">
         <div className="flex flex-col md:flex-row justify-between items-center">
@@ -150,7 +201,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <h3 className="text-xl font-bold brand-font mb-2">External Database Synchronization</h3>
                 <p className="text-blue-200 text-sm">Update Spirit Origin List from Atlas Academy Open API ({region}).</p>
             </div>
-            <button 
+            <button
                 onClick={handleAtlasSync}
                 disabled={isSyncing}
                 className={`mt-4 md:mt-0 px-6 py-3 rounded-lg font-bold shadow-lg transition-all transform hover:scale-105 flex items-center ${
@@ -188,7 +239,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {editingServant ? 'Edit Servant' : 'Add Manual Entry'}
             </h2>
             {editingServant && (
-            <button 
+            <button
                 onClick={onCancelEdit}
                 className="text-gray-500 hover:text-gray-700 underline"
             >
@@ -196,6 +247,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
             )}
         </div>
+
+        {/* Validation Errors Display */}
+        {validationErrors.length > 0 && (
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded">
+            <div className="flex items-start">
+              <svg className="h-5 w-5 text-red-500 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
+              </svg>
+              <div>
+                <h3 className="text-sm font-semibold text-red-800 mb-1">Validation Errors</h3>
+                <ul className="text-sm text-red-700 list-disc list-inside">
+                  {validationErrors.map((error, idx) => (
+                    <li key={idx}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -279,7 +349,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 />
             </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-lg">
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Base ATK</label>
@@ -338,16 +408,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div>
                 <label className="block text-sm font-medium text-gray-700">Traits</label>
                 <div className="flex gap-2 mb-2">
-                    <input 
-                        type="text" 
+                    <input
+                        type="text"
                         value={traitInput}
                         onChange={(e) => setTraitInput(e.target.value)}
                         className="flex-grow rounded-md border border-gray-300 p-2 shadow-sm"
                         placeholder="Add a trait..."
                         onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTrait())}
                     />
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         onClick={handleAddTrait}
                         className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
                     >
@@ -358,7 +428,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     {formData.traits.map(t => (
                         <span key={t} className="bg-gray-200 px-2 py-1 rounded-full text-sm flex items-center">
                             {t}
-                            <button 
+                            <button
                                 type="button"
                                 onClick={() => handleRemoveTrait(t)}
                                 className="ml-2 text-red-500 font-bold hover:text-red-700"

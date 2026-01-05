@@ -28,6 +28,32 @@ const App: React.FC = () => {
     checkSession();
   }, []);
 
+  // Periodically check if user is suspended
+  useEffect(() => {
+    if (!user) return;
+
+    const checkUserStatus = async () => {
+      try {
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('status, access_level')
+          .eq('id', user.id)
+          .single();
+
+        if (userProfile && (userProfile.status === 'SUSPENDED' || userProfile.access_level === 0)) {
+          await handleLogout();
+          alert('Your account has been suspended. Please contact support.');
+        }
+      } catch (error) {
+        console.error('Error checking user status:', error);
+      }
+    };
+
+    // Check every 30 seconds
+    const interval = setInterval(checkUserStatus, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
+
   const checkSession = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -40,11 +66,19 @@ const App: React.FC = () => {
           .single();
 
         if (!error && userProfile) {
+          // Check if user is suspended - force logout
+          if (userProfile.status === 'SUSPENDED' || userProfile.access_level === 0) {
+            await handleLogout();
+            alert('Your account has been suspended. Please contact support.');
+            return;
+          }
+
           setUser({
             id: 1,
             username: userProfile.username,
             email: userProfile.email,
-            role: userProfile.role,
+            role: userProfile.role_int ?? (userProfile.role === 'ADMIN' ? 1 : 0),
+            accessLevel: userProfile.access_level ?? (userProfile.role === 'ADMIN' ? 99 : 1),
             status: userProfile.status,
             createdAt: new Date(userProfile.created_at).getTime()
           });
@@ -182,7 +216,7 @@ const App: React.FC = () => {
                 servants={servants}
                 user={user}
                 region={region}
-                isAdmin={user?.role === 'ADMIN'}
+                isAdmin={user?.role === 1}
                 onEdit={(servant) => {
                   // Navigate to admin page - in the old version this would set editingServant
                   // For now, we can just console log or skip this feature
@@ -204,7 +238,7 @@ const App: React.FC = () => {
             } />
 
             <Route path="/admin" element={
-              user?.role === 'ADMIN' ? (
+              user?.role === 1 ? (
                 <AdminPage
                   servants={servants}
                   onSave={handleSaveServant}

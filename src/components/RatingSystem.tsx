@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Rating } from '../types';
 import { dbService } from '../services/dbService';
+import { validateRating, sanitizeComment } from '../utils/validation';
 
 interface RatingSystemProps {
   collectionNo: number; // Changed from servantId
@@ -72,6 +73,13 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ collectionNo, server, user,
           return;
       }
 
+      // Validate score
+      const validatedScore = validateRating(score);
+      if (!validatedScore) {
+          alert('Invalid rating score. Please select a score between 1 and 10.');
+          return;
+      }
+
       // If just setting score, save empty comment if it doesn't exist, or keep existing
       const commentToSave = userRating?.comment || '';
 
@@ -80,7 +88,7 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ collectionNo, server, user,
           username: user.username,
           collectionNo,
           server: server as 'JP' | 'CN' | 'EN', // Track for reference but not used in unique constraint
-          score,
+          score: validatedScore,
           comment: commentToSave
       });
 
@@ -93,6 +101,15 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ collectionNo, server, user,
 
       setIsSubmitting(true);
 
+      // Sanitize and validate comment
+      const sanitizedComment = sanitizeComment(commentText);
+
+      if (sanitizedComment.length > 5000) {
+          alert('Comment is too long. Maximum length is 5000 characters.');
+          setIsSubmitting(false);
+          return;
+      }
+
       // Use existing score or default to 5 if somehow editing without score
       const scoreToSave = userRating.score;
 
@@ -102,7 +119,7 @@ const RatingSystem: React.FC<RatingSystemProps> = ({ collectionNo, server, user,
           collectionNo,
           server: server as 'JP' | 'CN' | 'EN', // Track for reference but not used in unique constraint
           score: scoreToSave,
-          comment: commentText
+          comment: sanitizedComment
       });
 
       setIsSubmitting(false);

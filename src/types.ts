@@ -106,15 +106,29 @@ export interface War {
 }
 
 export interface User {
-  id: number;
+  id: number; // Actually stores UUID string for database operations
+  uid?: number; // Sequential ID for display purposes
   username: string;
-  role: 'USER' | 'ADMIN';
+  role: number; // 0 = USER, 1 = ADMIN
+  accessLevel?: number; // 1 = USER, 99 = ADMIN, allows for future roles
   password?: string; // Only used internally for mock auth
   email?: string;
   status?: 'ACTIVE' | 'SUSPENDED';
   registerIp?: string;
   createdAt?: number;
 }
+
+// Role constants for type safety
+export const USER_ROLE = {
+  USER: 0,
+  ADMIN: 1
+} as const;
+
+export const ACCESS_LEVEL = {
+  SUSPENDED: 0, // Suspended user - no permissions
+  USER: 1,
+  ADMIN: 99
+} as const;
 
 export interface Rating {
   id: string;

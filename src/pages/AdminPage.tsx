@@ -97,12 +97,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
     // Data Loading Functions
     const loadUsers = async () => setUsers(await dbService.getAllUsers());
     const loadWars = async () => {
-        let data = await dbService.getAllWars();
-        if (data.length === 0) {
-            // Auto sync first time
-            data = await fetchWarData(region);
-            await dbService.bulkUpsertWars(data);
-        }
+        const data = await dbService.getAllWars();
         setWars(data);
     }
     const loadRankings = async () => {
@@ -304,6 +299,26 @@ const AdminPage: React.FC<AdminPageProps> = ({
         await dbService.saveWar(editingWar);
         setEditingWar(null);
         loadWars();
+    };
+
+    const handleUpdateQuestsData = async () => {
+        if (!confirm(`Update quests data from Atlas Academy API (${region})? This will update quest information from the API.`)) return;
+        setIsSyncing(true);
+        setSyncMessage('Fetching quests data from Atlas Academy...');
+        try {
+            const warsData = await fetchWarData(region);
+            setSyncMessage(`Updating ${warsData.length} quests records...`);
+            await dbService.bulkUpdateWars(warsData);
+            setSyncMessage('Quests data updated successfully!');
+            setTimeout(() => {
+                setIsSyncing(false);
+                loadWars();
+            }, 1000);
+        } catch (error: any) {
+            console.error('Error updating quests data:', error);
+            setSyncMessage(`Error: ${error.message}`);
+            setTimeout(() => setIsSyncing(false), 3000);
+        }
     };
 
     return (
@@ -528,6 +543,28 @@ const AdminPage: React.FC<AdminPageProps> = ({
             {/* QUESTS TAB */}
             {activeTab === 'QUESTS' && (
                 <div className="space-y-6">
+                    {/* Update Quests Data Button */}
+                    <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="font-bold text-lg mb-1">Update Quests Data</h3>
+                                <p className="text-sm text-gray-600">Fetch latest quest information from Atlas Academy API</p>
+                            </div>
+                            <button
+                                onClick={handleUpdateQuestsData}
+                                disabled={isSyncing}
+                                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                            >
+                                {isSyncing ? 'Updating...' : 'Update Quests Data'}
+                            </button>
+                        </div>
+                        {syncMessage && (
+                            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                                {syncMessage}
+                            </div>
+                        )}
+                    </div>
+
                     {editingWar ? (
                         <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
                             <h3 className="font-bold text-xl mb-4">Edit Quest: {editingWar.name}</h3>

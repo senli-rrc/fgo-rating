@@ -82,6 +82,7 @@ interface SupabaseWar {
   banner: string | null;
   headerImage: string | null;
   priority: number;
+  quests: any[] | null;
   created_at: string;
 }
 
@@ -123,7 +124,8 @@ const convertWar = (w: SupabaseWar): War => ({
   longName: w.longName || w.name,
   banner: w.banner,
   headerImage: w.headerImage,
-  priority: w.priority
+  priority: w.priority,
+  quests: w.quests || []
 });
 
 export const dbService = {
@@ -268,7 +270,16 @@ export const dbService = {
       return [];
     }
 
-    return data ? data.map(convertWar) : [];
+    return data ? data.map(w => ({
+      id: w.id,
+      age: w.age,
+      name: w.name,
+      longName: w.longName,
+      banner: w.banner,
+      headerImage: w.headerImage,
+      priority: w.priority,
+      quests: w.quests || []
+    })) : [];
   },
 
   saveWar: async (war: War): Promise<War> => {
@@ -281,37 +292,35 @@ export const dbService = {
         longName: war.longName,
         banner: war.banner,
         headerImage: war.headerImage,
-        priority: war.priority
-      })
-      .select()
-      .single();
+        priority: war.priority,
+        quests: war.quests || []
+      });
 
     if (error) {
       console.error('Error saving war:', error);
       throw error;
     }
 
-    return convertWar(data);
+    return war;
   },
 
-  bulkUpsertWars: async (wars: War[]): Promise<void> => {
-    const warsData = wars.map(w => ({
-      id: w.id,
-      age: w.age,
-      name: w.name,
-      longName: w.longName,
-      banner: w.banner,
-      headerImage: w.headerImage,
-      priority: w.priority
-    }));
-
+  bulkUpdateWars: async (wars: War[]): Promise<void> => {
     const { error } = await supabase
       .from('wars')
-      .upsert(warsData);
+      .upsert(wars.map(war => ({
+        id: war.id,
+        age: war.age,
+        name: war.name,
+        longName: war.longName,
+        banner: war.banner,
+        headerImage: war.headerImage,
+        priority: war.priority,
+        quests: war.quests || []
+      })));
 
     if (error) {
-      console.error('Bulk upsert wars failed:', error);
-      throw new Error('Bulk upsert wars failed: ' + error.message);
+      console.error('Error bulk updating wars:', error);
+      throw error;
     }
   },
 

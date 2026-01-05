@@ -255,18 +255,66 @@ export const fetchWarData = async (region: string): Promise<War[]> => {
         const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch War data from Atlas Academy');
 
-        const data: AtlasWar[] = await response.json();
+        const data: any[] = await response.json();
 
         // Return only index 0-32 as requested
-        return data.slice(0, 33).map(w => ({
-            id: w.id,
-            age: w.age,
-            name: w.name,
-            longName: w.longName,
-            banner: w.banner,
-            headerImage: w.headerImage,
-            priority: w.priority
-        }));
+        return data.slice(0, 33).map(w => {
+            // Extract quests from spots
+            const quests: any[] = [];
+            if (w.spots) {
+                w.spots.forEach((spot: any) => {
+                    if (spot.quests) {
+                        spot.quests.forEach((quest: any) => {
+                            // Determine quest type based on quest properties
+                            let questType: 'main' | 'free' | 'interlude' = 'main';
+                            if (quest.type) {
+                                const typeStr = quest.type.toLowerCase();
+                                if (typeStr.includes('friendship')) questType = 'interlude';
+                                else if (typeStr.includes('free')) questType = 'free';
+                                else if (typeStr.includes('main')) questType = 'main';
+                            }
+
+                            // Extract all scripts from phaseScripts
+                            const scripts: any[] = [];
+                            if (quest.phaseScripts && quest.phaseScripts.length > 0) {
+                                quest.phaseScripts.forEach((phaseScript: any) => {
+                                    if (phaseScript.scripts && phaseScript.scripts.length > 0) {
+                                        phaseScript.scripts.forEach((script: any) => {
+                                            if (script.scriptId && script.script) {
+                                                scripts.push({
+                                                    scriptId: script.scriptId,
+                                                    scriptLink: script.script
+                                                });
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+
+                            quests.push({
+                                section: spot.id || 0,
+                                id: quest.id,
+                                name: quest.name || '',
+                                spot: spot.name || '',
+                                type: questType,
+                                scripts: scripts
+                            });
+                        });
+                    }
+                });
+            }
+
+            return {
+                id: w.id,
+                age: w.age,
+                name: w.name,
+                longName: w.longName,
+                banner: w.banner,
+                headerImage: w.headerImage,
+                priority: w.priority,
+                quests: quests
+            };
+        });
     } catch (error) {
         console.error('Atlas War Fetch Error:', error);
         return [];

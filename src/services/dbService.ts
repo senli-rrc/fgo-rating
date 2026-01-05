@@ -408,7 +408,7 @@ export const dbService = {
       return null;
     }
 
-    if (userData.status === 'SUSPENDED') {
+    if (userData.status === 'SUSPENDED' || userData.access_level === 0) {
       throw new Error('This account has been suspended.');
     }
 
@@ -416,7 +416,8 @@ export const dbService = {
       id: 1, // Placeholder for compatibility
       username: userData.username,
       email: userData.email,
-      role: userData.role,
+      role: userData.role_int ?? (userData.role === 'ADMIN' ? 1 : 0),
+      accessLevel: userData.access_level ?? (userData.role === 'ADMIN' ? 99 : 1),
       status: userData.status,
       createdAt: new Date(userData.created_at).getTime()
     };

@@ -4,6 +4,7 @@ import { Servant, Attribute, User, Rating, Reply, War } from '../types';
 import { CLASSES } from '../services/mockData';
 import { fetchAtlasData, fetchWarData, transformAtlasData } from '../services/atlasService';
 import { dbService } from '../services/dbService';
+import { validateUrl } from '../utils/validation';
 
 interface AdminPageProps {
     servants: Servant[];
@@ -165,6 +166,15 @@ const AdminPage: React.FC<AdminPageProps> = ({
             throw new Error("Invalid data format: Expected an array.");
         }
 
+        // Limit number of records to prevent DoS
+        if (data.length > 2000) {
+            throw new Error(`Too many records. Maximum is 2000, received ${data.length}.`);
+        }
+
+        if (data.length === 0) {
+            throw new Error("No data to import.");
+        }
+
         setSyncMessage(`Processing ${data.length} records...`);
         let servantsToSave: Servant[] = [];
 
@@ -204,15 +214,36 @@ const AdminPage: React.FC<AdminPageProps> = ({
 
             if (importMode === 'URL') {
                 if (!importUrl) throw new Error("Please enter a valid URL");
-                setSyncMessage(`Fetching from ${importUrl}...`);
-                const res = await fetch(importUrl);
+
+                // Validate URL against whitelist
+                const { validateUrl } = await import('../utils/validation');
+                const validatedUrl = validateUrl(importUrl);
+                if (!validatedUrl) {
+                    throw new Error("Invalid or blocked domain. Only trusted sources are allowed.");
+                }
+
+                setSyncMessage(`Fetching from ${validatedUrl}...`);
+                const res = await fetch(validatedUrl);
                 if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
+
+                // Check content size before parsing
+                const contentLength = res.headers.get('content-length');
+                if (contentLength && parseInt(contentLength) > 50_000_000) { // 50MB limit
+                    throw new Error("File too large. Maximum size is 50MB.");
+                }
+
                 const json = await res.json();
                 await processImportedData(json, 'URL');
             }
 
             if (importMode === 'FILE') {
                 if (!importFile) throw new Error("Please select a JSON file");
+
+                // Check file size (50MB limit)
+                if (importFile.size > 50_000_000) {
+                    throw new Error("File too large. Maximum size is 50MB.");
+                }
+
                 setSyncMessage(`Reading file ${importFile.name}...`);
                 const text = await importFile.text();
                 const json = await JSON.parse(text);

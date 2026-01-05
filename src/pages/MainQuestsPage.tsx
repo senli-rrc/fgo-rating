@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { War } from '../types';
 import { fetchWarData } from '../services/atlasService';
 import { dbService } from '../services/dbService';
@@ -9,6 +10,7 @@ interface MainQuestsPageProps {
 }
 
 const MainQuestsPage: React.FC<MainQuestsPageProps> = ({ region }) => {
+    const navigate = useNavigate();
     const [wars, setWars] = useState<War[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -59,7 +61,8 @@ const MainQuestsPage: React.FC<MainQuestsPageProps> = ({ region }) => {
                 {wars.map((war) => (
                     <div
                         key={war.id}
-                        className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 group"
+                        onClick={() => navigate(`/quest/${war.id}`)}
+                        className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 group cursor-pointer"
                     >
                         {/* Banner Image - Aspect Ratio adjusted for 450x125, background set to white */}
                         <div className="w-full aspect-[450/125] bg-white overflow-hidden relative">

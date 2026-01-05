@@ -14,6 +14,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import RankingPage from './pages/RankingPage';
 import MainQuestsPage from './pages/MainQuestsPage';
+import QuestPage from './pages/QuestPage';
 import ReviewsPage from './pages/ReviewsPage';
 
 const App: React.FC = () => {
@@ -235,6 +236,10 @@ const App: React.FC = () => {
 
             <Route path="/mainquests" element={
               <MainQuestsPage region={region} />
+            } />
+
+            <Route path="/quest/:id" element={
+              <QuestPage />
             } />
 
             <Route path="/admin" element={

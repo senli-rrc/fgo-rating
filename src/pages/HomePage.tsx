@@ -3,6 +3,7 @@ import { Servant } from '../types';
 import ServantCard from '../components/ServantCard';
 import ServantTable from '../components/ServantTable';
 import SearchBar from '../components/SearchBar';
+import PageHeader from '../components/PageHeader';
 
 interface HomePageProps {
   servants: Servant[];
@@ -62,10 +63,44 @@ const HomePage: React.FC<HomePageProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2 brand-font">Servant List</h1>
-        <p className="text-gray-500">Database of Servants recorded in Chaldea ({region} Data).</p>
-      </div>
+      <PageHeader
+        title="Servant List"
+        subtitle={`Database of Servants recorded in Chaldea (${region} Data).`}
+        region={region}
+        onRegionChange={onRegionChange}
+        extraControls={servants.length > 0 && (
+          <div className="flex bg-gray-200 p-1 rounded-lg">
+            <button
+              onClick={() => setDisplayMode('grid')}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${displayMode === 'grid'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+                }`}
+            >
+              <div className="flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                <span>Grid</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setDisplayMode('table')}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${displayMode === 'table'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+                }`}
+            >
+              <div className="flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                <span>Table</span>
+              </div>
+            </button>
+          </div>
+        )}
+      />
 
       {servants.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-lg border border-dashed border-gray-300">
@@ -88,57 +123,6 @@ const HomePage: React.FC<HomePageProps> = ({
         </div>
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-2 gap-4">
-            {/* View Toggles */}
-            <div className="flex bg-gray-200 p-1 rounded-lg">
-              <button
-                onClick={() => setDisplayMode('grid')}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${displayMode === 'grid'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-                  }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                  </svg>
-                  <span>Grid</span>
-                </div>
-              </button>
-              <button
-                onClick={() => setDisplayMode('table')}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${displayMode === 'table'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-                  }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                  </svg>
-                  <span>Table</span>
-                </div>
-              </button>
-            </div>
-
-            {/* Server Selection */}
-            <div className="flex bg-gray-200 p-1 rounded-lg">
-              {['JP', 'CN', 'EN'].map(r => (
-                <button
-                  key={r}
-                  onClick={() => onRegionChange(r)}
-                  disabled={importing}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${region === r
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 disabled:opacity-50'
-                    }`}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <SearchBar
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}

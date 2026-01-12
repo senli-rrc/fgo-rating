@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Servant } from '../types';
 import { CLASSES } from '../services/mockData';
 import { dbService } from '../services/dbService';
+import PageHeader from '../components/PageHeader';
 
 interface RankingPageProps {
     servants: Servant[];
@@ -84,26 +85,13 @@ const RankingPage: React.FC<RankingPageProps> = ({ servants, region, onRegionCha
 
     return (
         <div className="max-w-5xl mx-auto px-4 py-8 animate-fade-in">
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                    <h1 className="text-3xl font-bold text-gray-900 brand-font">Servant Rankings</h1>
-                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">LIVE</span>
-                </div>
-                <div className="flex bg-gray-200 p-1 rounded-lg">
-                    {['JP', 'CN', 'EN'].map(r => (
-                        <button
-                            key={r}
-                            onClick={() => onRegionChange(r)}
-                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${region === r
-                                ? 'bg-white text-blue-600 shadow-sm'
-                                : 'text-gray-600 hover:text-gray-900 disabled:opacity-50'
-                                }`}
-                        >
-                            {r}
-                        </button>
-                    ))}
-                </div>
-            </div>
+            <PageHeader
+                title="Servant Rankings"
+                badgeText="LIVE"
+                badgeColor="bg-red-500"
+                region={region}
+                onRegionChange={onRegionChange}
+            />
 
             {/* Category Tabs (Scrollable) */}
             <div className="mb-6 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">

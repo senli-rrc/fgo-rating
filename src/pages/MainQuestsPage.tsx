@@ -1,9 +1,9 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { War } from '../types';
 import { fetchWarData } from '../services/atlasService';
 import { dbService } from '../services/dbService';
+import PageHeader from '../components/PageHeader';
 
 interface MainQuestsPageProps {
     region: string;
@@ -53,28 +53,12 @@ const MainQuestsPage: React.FC<MainQuestsPageProps> = ({ region, onRegionChange 
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-            <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-                <div className="text-center md:text-left mb-4 md:mb-0">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2 brand-font">Main Quests ({region})</h1>
-                    <p className="text-gray-500">Chronicle of the Grand Order</p>
-                </div>
-
-                {/* Server Selection */}
-                <div className="flex bg-gray-200 p-1 rounded-lg">
-                    {['JP', 'CN', 'EN'].map(r => (
-                        <button
-                            key={r}
-                            onClick={() => onRegionChange(r)}
-                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${region === r
-                                ? 'bg-white text-blue-600 shadow-sm'
-                                : 'text-gray-600 hover:text-gray-900'
-                                }`}
-                        >
-                            {r}
-                        </button>
-                    ))}
-                </div>
-            </div>
+            <PageHeader
+                title="Main Quests"
+                subtitle="Chronicle of the Grand Order"
+                region={region}
+                onRegionChange={onRegionChange}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {wars.map((war) => (

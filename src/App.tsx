@@ -236,14 +236,14 @@ const App: React.FC = () => {
             } />
 
             <Route path="/mainquests" element={
-              <MainQuestsPage region={region} />
+              <MainQuestsPage region={region} onRegionChange={handleRegionChange} />
             } />
 
-            <Route path="/quest/:id" element={
+            <Route path="/:region/quest/:id" element={
               <QuestPage />
             } />
 
-            <Route path="/quest/:id/script/:scriptId" element={
+            <Route path="/:region/quest/:id/script/:scriptId" element={
               <ScriptPage user={user} />
             } />
 

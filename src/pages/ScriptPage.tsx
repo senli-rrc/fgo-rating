@@ -10,7 +10,7 @@ interface ScriptPageProps {
 }
 
 const ScriptPage: React.FC<ScriptPageProps> = ({ user }) => {
-  const { id, scriptId } = useParams<{ id: string; scriptId: string }>();
+  const { region: paramRegion, id, scriptId } = useParams<{ region: string; id: string; scriptId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const [scriptContent, setScriptContent] = useState<string>('');
@@ -33,7 +33,7 @@ const ScriptPage: React.FC<ScriptPageProps> = ({ user }) => {
         let currentQuestName = "";
 
         if (id) {
-          const wars = await dbService.getAllWars();
+          const wars = await dbService.getAllWars(paramRegion);
           const foundWar = wars.find(w => w.id === parseInt(id));
           setWar(foundWar || null);
 
@@ -118,7 +118,7 @@ const ScriptPage: React.FC<ScriptPageProps> = ({ user }) => {
         <h1 className="text-4xl font-bold text-gray-800 mb-4">Error Loading Script</h1>
         <p className="text-gray-600 mb-6">{error}</p>
         <button
-          onClick={() => navigate(`/quest/${id}`)}
+          onClick={() => navigate(`/${paramRegion}/quest/${id}`)}
           className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           Back to Quest
@@ -131,7 +131,7 @@ const ScriptPage: React.FC<ScriptPageProps> = ({ user }) => {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in bg-gray-50 min-h-screen">
       {/* Back Button */}
       <button
-        onClick={() => navigate(`/quest/${id}`)}
+        onClick={() => navigate(`/${paramRegion}/quest/${id}`)}
         className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -164,7 +164,7 @@ const ScriptPage: React.FC<ScriptPageProps> = ({ user }) => {
         <div className="p-6 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
           {prevScript ? (
             <button
-              onClick={() => navigate(`/quest/${id}/script/${prevScript.scriptId}`, {
+              onClick={() => navigate(`/${paramRegion}/quest/${id}/script/${prevScript.scriptId}`, {
                 state: { scriptLink: prevScript.scriptLink }
               })}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all text-sm font-medium text-gray-700 shadow-sm"
@@ -184,7 +184,7 @@ const ScriptPage: React.FC<ScriptPageProps> = ({ user }) => {
 
           {nextScript ? (
             <button
-              onClick={() => navigate(`/quest/${id}/script/${nextScript.scriptId}`, {
+              onClick={() => navigate(`/${paramRegion}/quest/${id}/script/${nextScript.scriptId}`, {
                 state: { scriptLink: nextScript.scriptLink }
               })}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all text-sm font-medium text-gray-700 shadow-sm text-right"

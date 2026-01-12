@@ -6,7 +6,7 @@ import { dbService } from '../services/dbService';
 type QuestType = 'main' | 'free' | 'interlude';
 
 const QuestPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { region, id } = useParams<{ region: string; id: string }>();
   const navigate = useNavigate();
   const [war, setWar] = useState<War | null>(null);
   const [loading, setLoading] = useState(true);
@@ -18,7 +18,7 @@ const QuestPage: React.FC = () => {
 
       setLoading(true);
       try {
-        const wars = await dbService.getAllWars();
+        const wars = await dbService.getAllWars(region);
         const foundWar = wars.find(w => w.id === parseInt(id));
         setWar(foundWar || null);
       } catch (error) {
@@ -146,11 +146,10 @@ const QuestPage: React.FC = () => {
                       <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
-                          activeTab === tab
+                        className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${activeTab === tab
                             ? 'bg-white text-blue-600 shadow'
                             : 'text-gray-600 hover:text-gray-900'
-                        }`}
+                          }`}
                       >
                         {tab.charAt(0).toUpperCase() + tab.slice(1)} ({count})
                       </button>
@@ -184,7 +183,7 @@ const QuestPage: React.FC = () => {
                                   {quest.scripts.map((script, idx) => (
                                     <button
                                       key={`${script.scriptId}-${idx}`}
-                                      onClick={() => navigate(`/quest/${war.id}/script/${script.scriptId}`, {
+                                      onClick={() => navigate(`/${region}/quest/${war.id}/script/${script.scriptId}`, {
                                         state: { scriptLink: script.scriptLink, questName: quest.name }
                                       })}
                                       className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md text-xs font-medium transition-colors"

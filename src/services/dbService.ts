@@ -15,6 +15,20 @@ const getServantTable = (server: string): string => {
   }
 };
 
+// Helper to get the correct war table based on server
+const getWarTable = (server: string): string => {
+  switch (server.toUpperCase()) {
+    case 'JP':
+      return 'wars_jp';
+    case 'CN':
+      return 'wars_cn';
+    case 'EN':
+      return 'wars_en';
+    default:
+      return 'wars_jp';
+  }
+};
+
 // Type definitions for Supabase responses
 interface SupabaseServant {
   id: number;
@@ -257,11 +271,15 @@ export const dbService = {
     }
   },
 
+  // Helper to get the correct war table based on server
+
+
   // --- Wars / Quests ---
 
-  getAllWars: async (): Promise<War[]> => {
+  getAllWars: async (server: string = 'JP'): Promise<War[]> => {
+    const table = getWarTable(server);
     const { data, error } = await supabase
-      .from('wars')
+      .from(table)
       .select('*')
       .order('priority', { ascending: false });
 
@@ -282,9 +300,10 @@ export const dbService = {
     })) : [];
   },
 
-  saveWar: async (war: War): Promise<War> => {
+  saveWar: async (war: War, server: string = 'JP'): Promise<War> => {
+    const table = getWarTable(server);
     const { data, error } = await supabase
-      .from('wars')
+      .from(table)
       .upsert({
         id: war.id,
         age: war.age,
@@ -304,9 +323,10 @@ export const dbService = {
     return war;
   },
 
-  bulkUpdateWars: async (wars: War[]): Promise<void> => {
+  bulkUpdateWars: async (wars: War[], server: string = 'JP'): Promise<void> => {
+    const table = getWarTable(server);
     const { error } = await supabase
-      .from('wars')
+      .from(table)
       .upsert(wars.map(war => ({
         id: war.id,
         age: war.age,

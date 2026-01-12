@@ -78,7 +78,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
         if (activeTab === 'USERS') loadUsers();
         if (activeTab === 'RANKINGS') loadRankings();
         if (activeTab === 'QUESTS') loadWars();
-    }, [activeTab]);
+    }, [activeTab, region]);
 
     useEffect(() => {
         if (editingServant) {
@@ -97,7 +97,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
     // Data Loading Functions
     const loadUsers = async () => setUsers(await dbService.getAllUsers());
     const loadWars = async () => {
-        const data = await dbService.getAllWars();
+        const data = await dbService.getAllWars(region);
         setWars(data);
     }
     const loadRankings = async () => {
@@ -301,14 +301,14 @@ const AdminPage: React.FC<AdminPageProps> = ({
         loadWars();
     };
 
-    const handleUpdateQuestsData = async () => {
-        if (!confirm(`Update quests data from Atlas Academy API (${region})? This will update quest information from the API.`)) return;
+    const handleUpdateQuestsData = async (targetRegion: string) => {
+        if (!confirm(`Update quests data from Atlas Academy API (${targetRegion})? This will update quest information from the API.`)) return;
         setIsSyncing(true);
-        setSyncMessage('Fetching quests data from Atlas Academy...');
+        setSyncMessage(`Fetching quests data from Atlas Academy (${targetRegion})...`);
         try {
-            const warsData = await fetchWarData(region);
+            const warsData = await fetchWarData(targetRegion);
             setSyncMessage(`Updating ${warsData.length} quests records...`);
-            await dbService.bulkUpdateWars(warsData);
+            await dbService.bulkUpdateWars(warsData, targetRegion);
             setSyncMessage('Quests data updated successfully!');
             setTimeout(() => {
                 setIsSyncing(false);
@@ -550,13 +550,18 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                 <h3 className="font-bold text-lg mb-1">Update Quests Data</h3>
                                 <p className="text-sm text-gray-600">Fetch latest quest information from Atlas Academy API</p>
                             </div>
-                            <button
-                                onClick={handleUpdateQuestsData}
-                                disabled={isSyncing}
-                                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
-                            >
-                                {isSyncing ? 'Updating...' : 'Update Quests Data'}
-                            </button>
+                            <div className="flex gap-2">
+                                {['JP', 'CN', 'EN'].map(r => (
+                                    <button
+                                        key={r}
+                                        onClick={() => handleUpdateQuestsData(r)}
+                                        disabled={isSyncing}
+                                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                                    >
+                                        {r}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                         {syncMessage && (
                             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
@@ -652,65 +657,65 @@ const AdminPage: React.FC<AdminPageProps> = ({
                     )}
                     <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
                         <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UID</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Access</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reg IP</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {users.map(u => (
-                                    <tr key={u.id}>
-                                        <td className="px-6 py-4 text-sm text-gray-500 font-mono">#{u.uid}</td>
-                                        <td className="px-6 py-4 text-sm font-bold text-gray-900">{u.username}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">{u.email}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
-                                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${u.role === 1 ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
-                                                {u.role === 1 ? 'ADMIN' : 'USER'} ({u.role})
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
-                                            <span className={`px-2 py-0.5 rounded text-xs font-mono ${u.accessLevel === 0 ? 'bg-red-50 text-red-800' : 'bg-blue-50 text-blue-800'}`}>
-                                                Lv.{u.accessLevel}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm">
-                                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${u.status === 'SUSPENDED' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
-                                                {u.status || 'ACTIVE'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm font-mono text-gray-500">{u.registerIp || '-'}</td>
-                                        <td className="px-6 py-4 text-right text-sm">
-                                            {u.role !== 1 && (
-                                                <div className="flex justify-end gap-2">
-                                                    <button
-                                                        onClick={() => handleUserEdit(u)}
-                                                        className="font-medium text-blue-600 hover:text-blue-900"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        onClick={() => toggleUserStatus(u)}
-                                                        className={`font-medium ${u.status === 'SUSPENDED' ? 'text-green-600 hover:text-green-900' : 'text-red-600 hover:text-red-900'}`}
-                                                    >
-                                                        {u.status === 'SUSPENDED' ? 'Activate' : 'Suspend'}
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </td>
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UID</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Access</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reg IP</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {users.map(u => (
+                                        <tr key={u.id}>
+                                            <td className="px-6 py-4 text-sm text-gray-500 font-mono">#{u.uid}</td>
+                                            <td className="px-6 py-4 text-sm font-bold text-gray-900">{u.username}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">{u.email}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">
+                                                <span className={`px-2 py-0.5 rounded text-xs font-bold ${u.role === 1 ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
+                                                    {u.role === 1 ? 'ADMIN' : 'USER'} ({u.role})
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">
+                                                <span className={`px-2 py-0.5 rounded text-xs font-mono ${u.accessLevel === 0 ? 'bg-red-50 text-red-800' : 'bg-blue-50 text-blue-800'}`}>
+                                                    Lv.{u.accessLevel}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm">
+                                                <span className={`px-2 py-0.5 rounded text-xs font-bold ${u.status === 'SUSPENDED' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                                                    {u.status || 'ACTIVE'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm font-mono text-gray-500">{u.registerIp || '-'}</td>
+                                            <td className="px-6 py-4 text-right text-sm">
+                                                {u.role !== 1 && (
+                                                    <div className="flex justify-end gap-2">
+                                                        <button
+                                                            onClick={() => handleUserEdit(u)}
+                                                            className="font-medium text-blue-600 hover:text-blue-900"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => toggleUserStatus(u)}
+                                                            className={`font-medium ${u.status === 'SUSPENDED' ? 'text-green-600 hover:text-green-900' : 'text-red-600 hover:text-red-900'}`}
+                                                        >
+                                                            {u.status === 'SUSPENDED' ? 'Activate' : 'Suspend'}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
                 </div>
             )}
 

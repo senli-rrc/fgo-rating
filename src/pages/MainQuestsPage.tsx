@@ -7,9 +7,10 @@ import { dbService } from '../services/dbService';
 
 interface MainQuestsPageProps {
     region: string;
+    onRegionChange: (region: string) => void;
 }
 
-const MainQuestsPage: React.FC<MainQuestsPageProps> = ({ region }) => {
+const MainQuestsPage: React.FC<MainQuestsPageProps> = ({ region, onRegionChange }) => {
     const navigate = useNavigate();
     const [wars, setWars] = useState<War[]>([]);
     const [loading, setLoading] = useState(true);
@@ -19,14 +20,14 @@ const MainQuestsPage: React.FC<MainQuestsPageProps> = ({ region }) => {
             setLoading(true);
             try {
                 // Try fetching from DB first
-                const dbWars = await dbService.getAllWars();
+                const dbWars = await dbService.getAllWars(region);
                 if (dbWars.length > 0) {
                     setWars(dbWars);
                 } else {
                     // Fallback to API if DB is empty
                     const data = await fetchWarData(region);
                     // Automatically save to DB for future edits
-                    await dbService.bulkUpsertWars(data);
+                    await dbService.bulkUpdateWars(data, region);
                     setWars(data);
                 }
             } catch (error) {
@@ -52,16 +53,34 @@ const MainQuestsPage: React.FC<MainQuestsPageProps> = ({ region }) => {
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-            <div className="mb-8 text-center">
-                <h1 className="text-4xl font-bold text-gray-900 mb-2 brand-font">Main Quests ({region})</h1>
-                <p className="text-gray-500">Chronicle of the Grand Order</p>
+            <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+                <div className="text-center md:text-left mb-4 md:mb-0">
+                    <h1 className="text-4xl font-bold text-gray-900 mb-2 brand-font">Main Quests ({region})</h1>
+                    <p className="text-gray-500">Chronicle of the Grand Order</p>
+                </div>
+
+                {/* Server Selection */}
+                <div className="flex bg-gray-200 p-1 rounded-lg">
+                    {['JP', 'CN', 'EN'].map(r => (
+                        <button
+                            key={r}
+                            onClick={() => onRegionChange(r)}
+                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${region === r
+                                ? 'bg-white text-blue-600 shadow-sm'
+                                : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                        >
+                            {r}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {wars.map((war) => (
                     <div
                         key={war.id}
-                        onClick={() => navigate(`/quest/${war.id}`)}
+                        onClick={() => navigate(`/${region}/quest/${war.id}`)}
                         className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 group cursor-pointer"
                     >
                         {/* Banner Image - Aspect Ratio adjusted for 450x125, background set to white */}

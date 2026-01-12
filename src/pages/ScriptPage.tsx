@@ -2,8 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import ScriptRenderer from '../components/ScriptRenderer';
 import { parseScript, ScriptInfo, Region } from '../utils/scriptParser';
+import { dbService } from '../services/dbService';
+import { User } from '../types';
 
-const ScriptPage: React.FC = () => {
+interface ScriptPageProps {
+  user: User | null;
+}
+
+const ScriptPage: React.FC<ScriptPageProps> = ({ user }) => {
   const { id, scriptId } = useParams<{ id: string; scriptId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -11,53 +17,96 @@ const ScriptPage: React.FC = () => {
   const [scriptInfo, setScriptInfo] = useState<ScriptInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [war, setWar] = useState<any | null>(null);
+  const [prevScript, setPrevScript] = useState<any | null>(null);
+  const [nextScript, setNextScript] = useState<any | null>(null);
 
-  const { scriptLink, questName } = (location.state as any) || {};
+  // Still use navigation state for initial context, but try to load specific data if missing
+  const { scriptLink } = (location.state as any) || {};
 
   useEffect(() => {
-    const fetchScript = async () => {
-      if (!scriptLink) {
-        setError('No script link provided');
-        setLoading(false);
-        return;
-      }
-
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await fetch(scriptLink);
+        // 1. Fetch War/Quest Data if ID is present
+        let currentScriptLink = scriptLink;
+        let currentQuestName = "";
+
+        if (id) {
+          const wars = await dbService.getAllWars();
+          const foundWar = wars.find(w => w.id === parseInt(id));
+          setWar(foundWar || null);
+
+          if (foundWar && scriptId) {
+            // Find the flat list of all scripts in this War to determine order
+            // Note: The data structure matches QuestPage: War -> Quests -> Scripts
+            const allScripts: { scriptId: string; scriptLink: string; questName: string; questId: number }[] = [];
+
+            foundWar.quests.forEach(quest => {
+              if (quest.scripts) {
+                quest.scripts.forEach(s => {
+                  allScripts.push({
+                    scriptId: s.scriptId,
+                    scriptLink: s.scriptLink,
+                    questName: quest.name,
+                    questId: quest.id
+                  });
+                });
+              }
+            });
+
+            const currentIndex = allScripts.findIndex(s => s.scriptId === scriptId);
+
+            if (currentIndex !== -1) {
+              const current = allScripts[currentIndex];
+              currentScriptLink = current.scriptLink;
+              currentQuestName = current.questName;
+
+              setPrevScript(allScripts[currentIndex - 1] || null);
+              setNextScript(allScripts[currentIndex + 1] || null);
+            }
+          }
+        }
+
+        // 2. Fetch Script Content
+        if (!currentScriptLink) {
+          // If we still don't have a link (e.g. deep link with bad ID), error
+          throw new Error('Script link not found');
+        }
+
+        const response = await fetch(currentScriptLink);
         if (!response.ok) throw new Error('Failed to fetch script');
 
         const text = await response.text();
         setScriptContent(text);
 
-        // Identify Region (simplified logic or default)
-        // Could infer from URL if needed: scriptLink.includes('/NA/') ? Region.NA : Region.JP
+        // Region Check from URL
         let region = Region.JP;
-        if (scriptLink.includes('/NA/')) region = Region.NA;
-        else if (scriptLink.includes('/CN/')) region = Region.CN;
-        else if (scriptLink.includes('/KR/')) region = Region.KR;
-        else if (scriptLink.includes('/TW/')) region = Region.TW;
+        if (currentScriptLink.includes('/NA/')) region = Region.NA;
+        else if (currentScriptLink.includes('/CN/')) region = Region.CN;
+        else if (currentScriptLink.includes('/KR/')) region = Region.KR;
+        else if (currentScriptLink.includes('/TW/')) region = Region.TW;
 
         const parsed = parseScript(region, text);
         setScriptInfo(parsed);
 
       } catch (err: any) {
-        console.error('Error fetching script:', err);
-        setError(err.message || 'Failed to load script');
+        console.error('Error details:', err);
+        setError(err.message || 'Failed to load data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchScript();
-  }, [scriptLink]);
+    fetchData();
+  }, [id, scriptId, scriptLink]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-[70vh] bg-gray-900">
+      <div className="flex justify-center items-center h-[70vh]">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="text-gray-400 animate-pulse">Loading Script...</p>
+          <p className="text-gray-500 animate-pulse">Loading Script...</p>
         </div>
       </div>
     );
@@ -65,9 +114,9 @@ const ScriptPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center bg-gray-900 min-h-screen">
-        <h1 className="text-4xl font-bold text-red-500 mb-4">Error Loading Script</h1>
-        <p className="text-gray-400 mb-6">{error}</p>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center h-[70vh] flex flex-col justify-center">
+        <h1 className="text-4xl font-bold text-gray-800 mb-4">Error Loading Script</h1>
+        <p className="text-gray-600 mb-6">{error}</p>
         <button
           onClick={() => navigate(`/quest/${id}`)}
           className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -79,66 +128,87 @@ const ScriptPage: React.FC = () => {
   }
 
   return (
-    <div className=" bg-gray-900 min-h-screen">
-      {/* Header */}
-      <div className="max-w-5xl mx-auto px-4 pt-6 pb-2">
-        <button
-          onClick={() => navigate(`/quest/${id}`)}
-          className="mb-4 flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Quest
-        </button>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in bg-gray-50 min-h-screen">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate(`/quest/${id}`)}
+        className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Quest
+      </button>
 
-        <div className="bg-gradient-to-r from-blue-900 to-purple-900 text-white p-6 rounded-lg shadow-lg border border-gray-700 relative overflow-hidden">
-          <div className="relative z-10">
-            <h1 className="text-2xl font-bold mb-1">Quest Script</h1>
-            {questName && <p className="text-blue-200 text-lg font-medium">{questName}</p>}
-            <p className="text-xs text-gray-400 mt-2 font-mono">ID: {scriptId}</p>
-          </div>
-          {/* Decorative background element */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+      <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+        {/* Header */}
+        <div className="p-6 border-b border-gray-200 bg-gray-50">
+          <h1 className="text-2xl font-bold text-gray-900">
+            {war?.name ? `${war.name} Script` : 'Script Viewer'}
+          </h1>
+          <p className="text-gray-500 text-sm font-mono mt-1">ID: {scriptId}</p>
+        </div>
+
+        {/* Content */}
+        <div className="bg-gray-100 p-0 sm:p-4">
+          {scriptInfo && (
+            <ScriptRenderer
+              script={scriptInfo}
+              region={Region.JP} // Should be dynamic based on parsed region
+              playerName={user?.username}
+            />
+          )}
+        </div>
+
+        {/* Footer / Navigation */}
+        <div className="p-6 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+          {prevScript ? (
+            <button
+              onClick={() => navigate(`/quest/${id}/script/${prevScript.scriptId}`, {
+                state: { scriptLink: prevScript.scriptLink }
+              })}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all text-sm font-medium text-gray-700 shadow-sm"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <div>
+                <span className="block text-xs text-gray-400 text-left">Previous</span>
+                {/* Shorten name if needed */}
+                {prevScript.questName}
+              </div>
+            </button>
+          ) : (
+            <div /> // Spacer
+          )}
+
+          {nextScript ? (
+            <button
+              onClick={() => navigate(`/quest/${id}/script/${nextScript.scriptId}`, {
+                state: { scriptLink: nextScript.scriptLink }
+              })}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all text-sm font-medium text-gray-700 shadow-sm text-right"
+            >
+              <div>
+                <span className="block text-xs text-gray-400 text-right">Next</span>
+                {nextScript.questName}
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          ) : (
+            <div />
+          )}
         </div>
       </div>
 
-      {/* Script Renderer */}
-      {scriptInfo && (
-        <ScriptRenderer
-          script={scriptInfo}
-          region={scriptLink?.includes('/NA/') ? Region.NA : Region.JP} // Redundant check for prop passing
-        />
-      )}
-
-      {/* Raw Script Toggle */}
-      <div className="max-w-5xl mx-auto px-4 pb-12 mt-8">
-        <details className="border border-gray-700 rounded-lg overflow-hidden bg-gray-950">
-          <summary className="px-6 py-4 cursor-pointer hover:bg-gray-900 font-medium text-gray-400 select-none">
-            View Raw Script
-          </summary>
-          <div className="px-6 py-4 bg-black/50 border-t border-gray-800">
-            <pre className="text-xs text-gray-500 whitespace-pre-wrap font-mono overflow-x-auto h-[500px] overflow-y-auto custom-scrollbar">
-              {scriptContent}
-            </pre>
-          </div>
-        </details>
-
-        {/* Download Button */}
-        <div className="mt-6 flex justify-end">
-          <a
-            href={scriptLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-6 py-3 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 hover:text-white transition-colors flex items-center gap-2 text-sm border border-gray-600"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Download Original
-          </a>
-        </div>
-      </div>
+      {/* Raw Script (Hidden by default, keeping logic but removed form view as requested by "Hide raw script view") */}
+      {/*
+      <details className="mt-4 border border-gray-200 rounded-lg overflow-hidden bg-white">
+        ...
+      </details>
+      */}
     </div>
   );
 };

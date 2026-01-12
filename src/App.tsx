@@ -119,7 +119,7 @@ const App: React.FC = () => {
 
   const handleRegister = async (email: string, username: string, password: string) => {
     try {
-      const mockIp = `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+      const mockIp = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
       const newUser = await dbService.registerUser(email, username, password, mockIp);
       setUser(newUser);
       alert(`Welcome to Chaldea, Master ${newUser.username}!`);
@@ -244,7 +244,7 @@ const App: React.FC = () => {
             } />
 
             <Route path="/quest/:id/script/:scriptId" element={
-              <ScriptPage />
+              <ScriptPage user={user} />
             } />
 
             <Route path="/admin" element={

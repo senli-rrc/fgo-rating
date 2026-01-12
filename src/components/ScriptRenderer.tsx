@@ -26,9 +26,10 @@ import {
 const ScriptDialogueLine: React.FC<{
   region?: Region;
   components: DialogueChildComponent[];
-}> = ({ components }) => {
+  playerName?: string;
+}> = ({ components, playerName }) => {
   return (
-    <span className="text-lg leading-relaxed text-gray-800">
+    <span className="text-lg leading-relaxed text-gray-900">
       {components.map((component, i) => {
         switch (component.type) {
           case ScriptComponentType.DIALOGUE_TEXT:
@@ -43,12 +44,12 @@ const ScriptDialogueLine: React.FC<{
               </ruby>
             );
           case ScriptComponentType.DIALOGUE_PLAYER_NAME:
-            return <span key={i} className="text-blue-600 font-semibold">Master</span>;
+            return <span key={i} className="text-blue-700 font-semibold">{playerName || "Master"}</span>;
           case ScriptComponentType.DIALOGUE_GENDER:
             // Default to male for now, or could make interactive
             return (
               <span key={i}>
-                <ScriptDialogueLine components={component.male} />
+                <ScriptDialogueLine components={component.male} playerName={playerName} />
               </span>
             );
           case ScriptComponentType.DIALOGUE_TEXT_IMAGE:
@@ -75,7 +76,7 @@ const Scene: React.FC<{
   foreground?: { frame: string };
 }> = ({ background, figure, equip, foreground }) => {
   return (
-    <div className="relative w-full aspect-video bg-black overflow-hidden rounded-lg shadow-md my-2 border border-gray-700">
+    <div className="relative w-full aspect-video bg-gray-100 overflow-hidden rounded-lg shadow-md my-2 border border-gray-200">
       {/* Background */}
       {background?.asset && (
         <img
@@ -122,37 +123,33 @@ const Scene: React.FC<{
 const DialogueRow: React.FC<{
   dialogue: ScriptDialogue;
   lineNumber?: number;
-}> = ({ dialogue, lineNumber }) => {
+  playerName?: string;
+}> = ({ dialogue, lineNumber, playerName }) => {
 
   // Extract speaker name
   const speakerName = dialogue.speaker?.name ? (
-    <span className="font-bold text-blue-400 block mb-1">
-      <ScriptDialogueLine components={dialogue.speaker.components} />
+    <span className="font-bold text-blue-700 block mb-1">
+      <ScriptDialogueLine components={dialogue.speaker.components} playerName={playerName} />
     </span>
   ) : null;
 
   return (
-    <div className="flex gap-4 p-4 hover:bg-gray-800/50 rounded-lg transition-colors border-b border-gray-700">
-      <div className="w-12 text-xs text-gray-500 pt-1 shrink-0 font-mono text-right select-none opacity-50">
-        {lineNumber}
-      </div>
-
+    <div className="flex gap-4 p-4 hover:bg-blue-50/50 rounded-lg transition-colors border-b border-gray-100">
       {/* Avatar or Speaker Label placeholder */}
       <div className="w-24 shrink-0 text-right">
         {speakerName}
       </div>
 
       <div className="flex-1">
-        <div className="bg-gray-900/80 p-4 rounded-lg text-gray-100 shadow-sm border border-gray-600 relative">
+        <div className="bg-white p-4 rounded-lg text-gray-900 shadow-sm border border-gray-200 relative">
           {/* Voice Line Indicator (simplified) */}
           {(dialogue.voice || dialogue.maleVoice) && (
-            <div className="absolute -top-3 -right-2 bg-green-900 text-green-200 text-xs px-2 py-1 rounded-full border border-green-700">
+            <div className="absolute -top-3 -right-2 bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full border border-green-200 shadow-sm">
               Voice
-              {/* In a real app, play button here */}
             </div>
           )}
 
-          <ScriptDialogueLine components={dialogue.components.flat()} />
+          <ScriptDialogueLine components={dialogue.components.flat()} playerName={playerName} />
         </div>
       </div>
     </div>
@@ -162,23 +159,26 @@ const DialogueRow: React.FC<{
 const ChoiceRow: React.FC<{
   component: ScriptChoices;
   lineNumber?: number;
-}> = ({ component, lineNumber }) => {
+  playerName?: string;
+}> = ({ component, lineNumber, playerName }) => {
   return (
-    <div className="py-6 px-4 bg-gray-900/30 border-y border-gray-700">
+    <div className="py-6 px-4 bg-gray-50 border-y border-gray-100">
       <div className="max-w-xl mx-auto space-y-3">
-        <div className="text-center text-sm text-gray-400 mb-2 uppercase tracking-widest font-semibold">Decision</div>
+        <div className="text-center text-sm text-gray-500 mb-2 uppercase tracking-widest font-semibold">Decision</div>
         {component.choices.map((choice) => (
           <div key={choice.id} className="group">
-            <button className="w-full p-4 bg-gradient-to-r from-purple-900/80 to-blue-900/80 hover:from-purple-800 hover:to-blue-800 border border-purple-500/50 text-white rounded-lg shadow-lg transition-all transform hover:scale-[1.02] text-left">
-              <span className="font-bold mr-2 text-yellow-400">➤</span>
-              <ScriptDialogueLine components={choice.option} />
+            <button className="w-full p-4 bg-white hover:bg-blue-50 border border-blue-200 text-gray-900 rounded-lg shadow-sm transition-all transform hover:scale-[1.01] hover:shadow-md text-left flex items-center">
+              <span className="font-bold mr-3 text-blue-500">➤</span>
+              <div className="flex-1">
+                <ScriptDialogueLine components={choice.option} playerName={playerName} />
+              </div>
             </button>
 
             {/* Recursive rendering for results */}
             {choice.results.length > 0 && (
-              <div className="mt-4 ml-8 pl-4 border-l-2 border-purple-500/30">
+              <div className="mt-4 ml-8 pl-4 border-l-2 border-blue-200">
                 {choice.results.map((res, i) => (
-                  <ScriptRow key={i} wrapper={res} />
+                  <ScriptRow key={i} wrapper={res} playerName={playerName} />
                 ))}
               </div>
             )}
@@ -227,10 +227,7 @@ const SceneRow: React.FC<{
   if (!backgroundData && !figureData && !foregroundData) return null;
 
   return (
-    <div className="p-4 bg-black/20 text-center">
-      <div className="w-12 text-xs text-gray-500 shrink-0 font-mono inline-block text-right pr-4 align-top">
-        {lineNumber}
-      </div>
+    <div className="p-4 bg-gray-50 text-center border-b border-gray-100">
       <div className="inline-block w-full max-w-4xl">
         <Scene
           background={backgroundData}
@@ -248,14 +245,15 @@ const ScriptRow: React.FC<{
   wrapper: ScriptComponentWrapper;
   // We would need to pass state/refs down for full functionality
   state?: any;
-}> = ({ wrapper }) => {
+  playerName?: string;
+}> = ({ wrapper, playerName }) => {
   const { content, lineNumber } = wrapper;
 
   switch (content.type) {
     case ScriptComponentType.DIALOGUE:
-      return <DialogueRow dialogue={content} lineNumber={lineNumber} />;
+      return <DialogueRow dialogue={content} lineNumber={lineNumber} playerName={playerName} />;
     case ScriptComponentType.CHOICES:
-      return <ChoiceRow component={content} lineNumber={lineNumber} />;
+      return <ChoiceRow component={content} lineNumber={lineNumber} playerName={playerName} />;
     case ScriptComponentType.BACKGROUND:
       // Handled by state tracking in a real implementation,
       // but for a simple list render, we just show the change
@@ -277,18 +275,16 @@ const ScriptRow: React.FC<{
       }
 
       // Debug/Info for other components
-      return (
-        <div className="px-4 py-1 text-xs text-gray-400 font-mono border-l-2 border-gray-800 ml-16 pl-2 hover:text-gray-300">
-          [{lineNumber}] {content.type}
-        </div>
-      );
+      // User requested to hide these lines (e.g. SOUND_EFFECT, UNPARSED)
+      return null;
   }
 };
 
 const ScriptRenderer: React.FC<{
   script: ScriptInfo;
   region?: Region;
-}> = ({ script, region = Region.JP }) => {
+  playerName?: string;
+}> = ({ script, region = Region.JP, playerName }) => {
 
   // In a full implementation, we need to reduce the script components to determine
   // the state (current BG, current Figure) at each line to render SceneRows correctly.
@@ -300,10 +296,10 @@ const ScriptRenderer: React.FC<{
   // Optimization: Merge scene updates.
 
   return (
-    <div className="bg-gray-900 min-h-screen text-gray-200 font-sans">
-      <div className="container mx-auto max-w-5xl bg-gray-950 shadow-2xl min-h-screen border-x border-gray-800">
+    <div className="bg-white text-gray-900 font-sans rounded-b-lg shadow-inner overflow-hidden border-t border-gray-200">
+      <div className="w-full">
         {script.components.map((wrapper, i) => (
-          <ScriptRow key={i} wrapper={wrapper} />
+          <ScriptRow key={i} wrapper={wrapper} playerName={playerName} />
         ))}
       </div>
     </div>

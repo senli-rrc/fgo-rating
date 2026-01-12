@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react';
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
@@ -197,6 +198,7 @@ const App: React.FC = () => {
     <Router>
       <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
         <Navbar user={user} onLogout={handleLogout} />
+        <Analytics />
 
         <main className="container mx-auto pb-12">
           <Routes>

@@ -43,45 +43,45 @@ interface AtlasNP {
 }
 
 interface AtlasServant {
-  id: number;
-  collectionNo: number;
-  name: string;
-  originalName: string;
-  className: string;
-  type: string;
-  rarity: number;
-  atkMax: number;
-  hpMax: number;
-  atkBase: number;
-  hpBase: number;
-  cost: number;
-  attribute: string;
-  cards: string[];
-  traits: { id: number; name: string }[];
-  face?: string;
-  extraAssets?: {
-    charaGraph?: {
-      ascension?: Record<string, string>;
-      costume?: Record<string, string>;
+    id: number;
+    collectionNo: number;
+    name: string;
+    originalName: string;
+    className: string;
+    type: string;
+    rarity: number;
+    atkMax: number;
+    hpMax: number;
+    atkBase: number;
+    hpBase: number;
+    cost: number;
+    attribute: string;
+    cards: string[];
+    traits: { id: number; name: string }[];
+    face?: string;
+    extraAssets?: {
+        charaGraph?: {
+            ascension?: Record<string, string>;
+            costume?: Record<string, string>;
+        }
+    };
+    skills: AtlasSkill[];
+    classPassive: AtlasSkill[];
+    appendPassive: AtlasAppendPassive[];
+    noblePhantasms: AtlasNP[];
+    profile?: {
+        cv: string;
+        illustrator: string;
+        stats?: {
+            strength: string;
+            endurance: string;
+            agility: string;
+            magic: string;
+            luck: string;
+            np: string;
+        };
+        comments?: { id: number; comment: string }[];
     }
-  };
-  skills: AtlasSkill[];
-  classPassive: AtlasSkill[];
-  appendPassive: AtlasAppendPassive[];
-  noblePhantasms: AtlasNP[];
-  profile?: {
-      cv: string;
-      illustrator: string;
-      stats?: {
-        strength: string;
-        endurance: string;
-        agility: string;
-        magic: string;
-        luck: string;
-        np: string;
-      };
-      comments?: { id: number; comment: string }[];
-  }
 }
 
 interface AtlasWar {
@@ -101,150 +101,150 @@ export const transformAtlasData = (data: any[], region: string, limit: number = 
     // Filter for playable servants only (CollectionNo > 0 is the gold standard for playable)
     // We sort by collectionNo DESC to ensure if we ever hit the limit, we keep the NEWEST servants.
     const validServants = (data as AtlasServant[])
-      .filter(s => s.collectionNo > 0)
-      .sort((a, b) => b.collectionNo - a.collectionNo)
-      .slice(0, limit);
+        .filter(s => s.collectionNo > 0)
+        .sort((a, b) => b.collectionNo - a.collectionNo)
+        .slice(0, limit);
 
     const mappedServants: Servant[] = validServants.map(s => {
-      // Map Class Name to ID
-      const classObj = CLASSES.find(c => c.name.toLowerCase() === s.className.toLowerCase());
-      const classId = classObj ? classObj.id : 100; // 100 for Unknown/New classes
+        // Map Class Name to ID
+        const classObj = CLASSES.find(c => c.name.toLowerCase() === s.className.toLowerCase());
+        const classId = classObj ? classObj.id : 100; // 100 for Unknown/New classes
 
-      // Map Attribute string to Enum
-      let attribute = Attribute.EARTH;
-      const attrLower = s.attribute ? s.attribute.toLowerCase() : 'earth';
-      if (Object.values(Attribute).includes(attrLower as Attribute)) {
-        attribute = attrLower as Attribute;
-      }
+        // Map Attribute string to Enum
+        let attribute = Attribute.EARTH;
+        const attrLower = s.attribute ? s.attribute.toLowerCase() : 'earth';
+        if (Object.values(Attribute).includes(attrLower as Attribute)) {
+            attribute = attrLower as Attribute;
+        }
 
-      // Construct URLs
-      // Use dynamic region for fallback, though Atlas often stores assets in a shared path or JP structure
-      const faceUrl = s.face || `https://static.atlasacademy.io/${apiRegion}/Faces/f_${s.id}0.png`;
+        // Construct URLs
+        // Use dynamic region for fallback, though Atlas often stores assets in a shared path or JP structure
+        const faceUrl = s.face || `https://static.atlasacademy.io/${apiRegion}/Faces/f_${s.id}0.png`;
 
-      // Construct Ascension Images (CharaGraph)
-      // Use extraAssets to get correct ascension and costume images
-      const charaGraph = s.extraAssets?.charaGraph || {};
-      const ascensionMap = charaGraph.ascension || {};
-      const costumeMap = charaGraph.costume || {};
+        // Construct Ascension Images (CharaGraph)
+        // Use extraAssets to get correct ascension and costume images
+        const charaGraph = s.extraAssets?.charaGraph || {};
+        const ascensionMap = charaGraph.ascension || {};
+        const costumeMap = charaGraph.costume || {};
 
-      // Sort ascensions by key (1, 2, 3, 4)
-      const ascensionImages = Object.keys(ascensionMap)
-        .sort((a, b) => parseInt(a) - parseInt(b))
-        .map(key => ascensionMap[key]);
+        // Sort ascensions by key (1, 2, 3, 4)
+        const ascensionImages = Object.keys(ascensionMap)
+            .sort((a, b) => parseInt(a) - parseInt(b))
+            .map(key => ascensionMap[key]);
 
-      // Get costumes
-      const costumeImages = Object.values(costumeMap);
+        // Get costumes
+        const costumeImages = Object.values(costumeMap);
 
-      let images = [...ascensionImages, ...costumeImages];
+        let images = [...ascensionImages, ...costumeImages];
 
-      // Fallback manual construction if extraAssets is missing
-      if (images.length === 0) {
-          images = [
-              `https://static.atlasacademy.io/${apiRegion}/CharaGraph/${s.id}/${s.id}a.png`,
-              `https://static.atlasacademy.io/${apiRegion}/CharaGraph/${s.id}/${s.id}b.png`,
-              `https://static.atlasacademy.io/${apiRegion}/CharaGraph/${s.id}/${s.id}c.png`,
-              `https://static.atlasacademy.io/${apiRegion}/CharaGraph/${s.id}/${s.id}d.png`
-          ];
-      }
+        // Fallback manual construction if extraAssets is missing
+        if (images.length === 0) {
+            images = [
+                `https://static.atlasacademy.io/${apiRegion}/CharaGraph/${s.id}/${s.id}a.png`,
+                `https://static.atlasacademy.io/${apiRegion}/CharaGraph/${s.id}/${s.id}b.png`,
+                `https://static.atlasacademy.io/${apiRegion}/CharaGraph/${s.id}/${s.id}c.png`,
+                `https://static.atlasacademy.io/${apiRegion}/CharaGraph/${s.id}/${s.id}d.png`
+            ];
+        }
 
-      const mapFunction = (f: AtlasFunction) => ({
-        funcId: f.funcId,
-        funcType: f.funcType,
-        funcPopupText: f.funcPopupText,
-        funcPopupIcon: f.funcPopupIcon,
-        buffs: f.buffs ? f.buffs.map(b => ({ name: b.name, icon: b.icon, detail: b.detail })) : [],
-        svals: f.svals || []
-      });
+        const mapFunction = (f: AtlasFunction) => ({
+            funcId: f.funcId,
+            funcType: f.funcType,
+            funcPopupText: f.funcPopupText,
+            funcPopupIcon: f.funcPopupIcon,
+            buffs: f.buffs ? f.buffs.map(b => ({ name: b.name, icon: b.icon, detail: b.detail })) : [],
+            svals: f.svals || []
+        });
 
-      // Map new fields
-      const noblePhantasms: NpModel[] = s.noblePhantasms ? s.noblePhantasms.map(np => ({
-          id: np.id,
-          num: np.num,
-          name: np.name,
-          detail: np.detail,
-          card: np.card,
-          rank: np.rank,
-          type: np.type,
-          functions: np.functions ? np.functions.map(mapFunction) : []
-      })) : [];
+        // Map new fields
+        const noblePhantasms: NpModel[] = s.noblePhantasms ? s.noblePhantasms.map(np => ({
+            id: np.id,
+            num: np.num,
+            name: np.name,
+            detail: np.detail,
+            card: np.card,
+            rank: np.rank,
+            type: np.type,
+            functions: np.functions ? np.functions.map(mapFunction) : []
+        })) : [];
 
-      const mapSkill = (skill: AtlasSkill, overrideNum?: number): SkillModel => ({
-          id: skill.id,
-          num: overrideNum ?? skill.num,
-          name: skill.name,
-          detail: skill.detail,
-          icon: skill.icon,
-          coolDown: skill.coolDown,
-          functions: skill.functions ? skill.functions.map(mapFunction) : []
-      });
+        const mapSkill = (skill: AtlasSkill, overrideNum?: number): SkillModel => ({
+            id: skill.id,
+            num: overrideNum ?? skill.num,
+            name: skill.name,
+            detail: skill.detail,
+            icon: skill.icon,
+            coolDown: skill.coolDown,
+            functions: skill.functions ? skill.functions.map(mapFunction) : []
+        });
 
-      const skills = s.skills ? s.skills.map(sk => mapSkill(sk)) : [];
-      const classPassive = s.classPassive ? s.classPassive.map(sk => mapSkill(sk)) : [];
+        const skills = s.skills ? s.skills.map(sk => mapSkill(sk)) : [];
+        const classPassive = s.classPassive ? s.classPassive.map(sk => mapSkill(sk)) : [];
 
-      // Fix for Append Skills: they are wrapped in an object { num, skill }
-      const appendPassive = s.appendPassive ? s.appendPassive.map(ap => mapSkill(ap.skill, ap.num)) : [];
+        // Fix for Append Skills: they are wrapped in an object { num, skill }
+        const appendPassive = s.appendPassive ? s.appendPassive.map(ap => mapSkill(ap.skill, ap.num)) : [];
 
-      const profile: ProfileModel | undefined = s.profile ? {
-          cv: s.profile.cv,
-          illustrator: s.profile.illustrator,
-          stats: s.profile.stats,
-          comments: s.profile.comments
-      } : undefined;
+        const profile: ProfileModel | undefined = s.profile ? {
+            cv: s.profile.cv,
+            illustrator: s.profile.illustrator,
+            stats: s.profile.stats,
+            comments: s.profile.comments
+        } : undefined;
 
 
-      return {
-        id: s.id,
-        collectionNo: s.collectionNo,
-        name: s.name,
-        originalName: s.originalName || s.name,
-        type: 'Normal',
-        rarity: s.rarity,
-        classId: classId,
-        className: s.className,
-        attribute: attribute,
-        atkMax: s.atkMax,
-        hpMax: s.hpMax,
-        atkBase: s.atkBase,
-        hpBase: s.hpBase,
-        cost: s.cost,
-        cards: s.cards || [],
-        images: images,
-        face: faceUrl,
-        traits: s.traits ? s.traits.map(t => t.name) : [],
-        noblePhantasms,
-        skills,
-        classPassive,
-        appendPassive,
-        profile
-      };
+        return {
+            id: s.id,
+            collectionNo: s.collectionNo,
+            name: s.name,
+            originalName: s.originalName || s.name,
+            type: 'Normal',
+            rarity: s.rarity,
+            classId: classId,
+            className: s.className,
+            attribute: attribute,
+            atkMax: s.atkMax,
+            hpMax: s.hpMax,
+            atkBase: s.atkBase,
+            hpBase: s.hpBase,
+            cost: s.cost,
+            cards: s.cards || [],
+            images: images,
+            face: faceUrl,
+            traits: s.traits ? s.traits.map(t => t.name) : [],
+            noblePhantasms,
+            skills,
+            classPassive,
+            appendPassive,
+            profile
+        };
     });
 
     return mappedServants;
 }
 
 export const fetchAtlasData = async (region: string, onProgress: (msg: string) => void): Promise<Servant[]> => {
-  try {
-    const apiRegion = getApiRegion(region);
-    const url = `https://api.atlasacademy.io/export/${apiRegion}/nice_servant.json`;
+    try {
+        const apiRegion = getApiRegion(region);
+        const url = `https://api.atlasacademy.io/export/${apiRegion}/nice_servant.json`;
 
-    onProgress(`Fetching data from Atlas Academy API (${region} Server)...`);
+        onProgress(`Fetching data from Atlas Academy API (${region} Server)...`);
 
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Failed to fetch from Atlas Academy (${region})`);
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch from Atlas Academy (${region})`);
 
-    onProgress('Parsing data...');
-    const data: AtlasServant[] = await response.json();
+        onProgress('Parsing data...');
+        const data: AtlasServant[] = await response.json();
 
-    // Limit to 50 for development/debugging as requested
-    const MAX_RECORDS = 1500;
-    onProgress(`Processing records...`);
+        // Limit to 50 for development/debugging as requested
+        const MAX_RECORDS = 1500;
+        onProgress(`Processing records...`);
 
-    return transformAtlasData(data, region, MAX_RECORDS);
+        return transformAtlasData(data, region, MAX_RECORDS);
 
-  } catch (error) {
-    console.error('Atlas Sync Error:', error);
-    throw error;
-  }
+    } catch (error) {
+        console.error('Atlas Sync Error:', error);
+        throw error;
+    }
 };
 
 export const fetchWarData = async (region: string): Promise<War[]> => {
@@ -255,18 +255,65 @@ export const fetchWarData = async (region: string): Promise<War[]> => {
         const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch War data from Atlas Academy');
 
-        const data: AtlasWar[] = await response.json();
+        const data: any[] = await response.json();
 
-        // Return only index 0-32 as requested
-        return data.slice(0, 33).map(w => ({
-            id: w.id,
-            age: w.age,
-            name: w.name,
-            longName: w.longName,
-            banner: w.banner,
-            headerImage: w.headerImage,
-            priority: w.priority
-        }));
+        return data.filter(w => w.id < 1000).map(w => {
+            // Extract quests from spots
+            const quests: any[] = [];
+            if (w.spots) {
+                w.spots.forEach((spot: any) => {
+                    if (spot.quests) {
+                        spot.quests.forEach((quest: any) => {
+                            // Determine quest type based on quest properties
+                            let questType: 'main' | 'free' | 'interlude' = 'main';
+                            if (quest.type) {
+                                const typeStr = quest.type.toLowerCase();
+                                if (typeStr.includes('friendship')) questType = 'interlude';
+                                else if (typeStr.includes('free')) questType = 'free';
+                                else if (typeStr.includes('main')) questType = 'main';
+                            }
+
+                            // Extract all scripts from phaseScripts
+                            const scripts: any[] = [];
+                            if (quest.phaseScripts && quest.phaseScripts.length > 0) {
+                                quest.phaseScripts.forEach((phaseScript: any) => {
+                                    if (phaseScript.scripts && phaseScript.scripts.length > 0) {
+                                        phaseScript.scripts.forEach((script: any) => {
+                                            if (script.scriptId && script.script) {
+                                                scripts.push({
+                                                    scriptId: script.scriptId,
+                                                    scriptLink: script.script
+                                                });
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+
+                            quests.push({
+                                section: spot.id || 0,
+                                id: quest.id,
+                                name: quest.name || '',
+                                spot: spot.name || '',
+                                type: questType,
+                                scripts: scripts
+                            });
+                        });
+                    }
+                });
+            }
+
+            return {
+                id: w.id,
+                age: w.age,
+                name: w.name,
+                longName: w.longName,
+                banner: w.banner,
+                headerImage: w.headerImage,
+                priority: w.priority,
+                quests: quests
+            };
+        });
     } catch (error) {
         console.error('Atlas War Fetch Error:', error);
         return [];

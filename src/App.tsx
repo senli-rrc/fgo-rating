@@ -14,6 +14,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import RankingPage from './pages/RankingPage';
 import MainQuestsPage from './pages/MainQuestsPage';
+import QuestPage from './pages/QuestPage';
+import ScriptPage from './pages/ScriptPage';
 import ReviewsPage from './pages/ReviewsPage';
 
 const App: React.FC = () => {
@@ -117,7 +119,7 @@ const App: React.FC = () => {
 
   const handleRegister = async (email: string, username: string, password: string) => {
     try {
-      const mockIp = `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+      const mockIp = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
       const newUser = await dbService.registerUser(email, username, password, mockIp);
       setUser(newUser);
       alert(`Welcome to Chaldea, Master ${newUser.username}!`);
@@ -234,7 +236,15 @@ const App: React.FC = () => {
             } />
 
             <Route path="/mainquests" element={
-              <MainQuestsPage region={region} />
+              <MainQuestsPage region={region} onRegionChange={handleRegionChange} />
+            } />
+
+            <Route path="/:region/quest/:id" element={
+              <QuestPage />
+            } />
+
+            <Route path="/:region/quest/:id/script/:scriptId" element={
+              <ScriptPage user={user} />
             } />
 
             <Route path="/admin" element={

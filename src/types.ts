@@ -95,6 +95,20 @@ export interface Servant {
   profile?: ProfileModel;
 }
 
+export interface QuestScript {
+  scriptId: string;
+  scriptLink: string;
+}
+
+export interface Quest {
+  section: number;
+  id: number;
+  name: string;
+  spot: string;
+  type: 'main' | 'free' | 'interlude';
+  scripts: QuestScript[];
+}
+
 export interface War {
   id: number;
   age: string;
@@ -103,6 +117,7 @@ export interface War {
   banner?: string;
   headerImage?: string;
   priority: number;
+  quests?: Quest[];
 }
 
 export interface User {

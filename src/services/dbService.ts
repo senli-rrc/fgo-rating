@@ -15,6 +15,20 @@ const getServantTable = (server: string): string => {
   }
 };
 
+// Helper to get the correct war table based on server
+const getWarTable = (server: string): string => {
+  switch (server.toUpperCase()) {
+    case 'JP':
+      return 'wars_jp';
+    case 'CN':
+      return 'wars_cn';
+    case 'EN':
+      return 'wars_en';
+    default:
+      return 'wars_jp';
+  }
+};
+
 // Type definitions for Supabase responses
 interface SupabaseServant {
   id: number;
@@ -82,6 +96,7 @@ interface SupabaseWar {
   banner: string | null;
   headerImage: string | null;
   priority: number;
+  quests: any[] | null;
   created_at: string;
 }
 
@@ -123,7 +138,8 @@ const convertWar = (w: SupabaseWar): War => ({
   longName: w.longName || w.name,
   banner: w.banner,
   headerImage: w.headerImage,
-  priority: w.priority
+  priority: w.priority,
+  quests: w.quests || []
 });
 
 export const dbService = {
@@ -255,11 +271,15 @@ export const dbService = {
     }
   },
 
+  // Helper to get the correct war table based on server
+
+
   // --- Wars / Quests ---
 
-  getAllWars: async (): Promise<War[]> => {
+  getAllWars: async (server: string = 'JP'): Promise<War[]> => {
+    const table = getWarTable(server);
     const { data, error } = await supabase
-      .from('wars')
+      .from(table)
       .select('*')
       .order('priority', { ascending: false });
 
@@ -268,12 +288,22 @@ export const dbService = {
       return [];
     }
 
-    return data ? data.map(convertWar) : [];
+    return data ? data.map(w => ({
+      id: w.id,
+      age: w.age,
+      name: w.name,
+      longName: w.longName,
+      banner: w.banner,
+      headerImage: w.headerImage,
+      priority: w.priority,
+      quests: w.quests || []
+    })) : [];
   },
 
-  saveWar: async (war: War): Promise<War> => {
+  saveWar: async (war: War, server: string = 'JP'): Promise<War> => {
+    const table = getWarTable(server);
     const { data, error } = await supabase
-      .from('wars')
+      .from(table)
       .upsert({
         id: war.id,
         age: war.age,
@@ -281,37 +311,36 @@ export const dbService = {
         longName: war.longName,
         banner: war.banner,
         headerImage: war.headerImage,
-        priority: war.priority
-      })
-      .select()
-      .single();
+        priority: war.priority,
+        quests: war.quests || []
+      });
 
     if (error) {
       console.error('Error saving war:', error);
       throw error;
     }
 
-    return convertWar(data);
+    return war;
   },
 
-  bulkUpsertWars: async (wars: War[]): Promise<void> => {
-    const warsData = wars.map(w => ({
-      id: w.id,
-      age: w.age,
-      name: w.name,
-      longName: w.longName,
-      banner: w.banner,
-      headerImage: w.headerImage,
-      priority: w.priority
-    }));
-
+  bulkUpdateWars: async (wars: War[], server: string = 'JP'): Promise<void> => {
+    const table = getWarTable(server);
     const { error } = await supabase
-      .from('wars')
-      .upsert(warsData);
+      .from(table)
+      .upsert(wars.map(war => ({
+        id: war.id,
+        age: war.age,
+        name: war.name,
+        longName: war.longName,
+        banner: war.banner,
+        headerImage: war.headerImage,
+        priority: war.priority,
+        quests: war.quests || []
+      })));
 
     if (error) {
-      console.error('Bulk upsert wars failed:', error);
-      throw new Error('Bulk upsert wars failed: ' + error.message);
+      console.error('Error bulk updating wars:', error);
+      throw error;
     }
   },
 

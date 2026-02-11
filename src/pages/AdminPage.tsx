@@ -259,7 +259,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
         try {
             const newData = await fetchAtlasData(targetRegion, (msg) => setSyncMessage(msg));
             setSyncMessage(`Saving ${newData.length} records...`);
-            await dbService.bulkUpsert(newData);
+            await dbService.bulkUpsert(newData, targetRegion);
             setSyncMessage('Done!');
             setTimeout(() => { setIsSyncing(false); if (onDataSync) onDataSync(); }, 1000);
         } catch (error) {

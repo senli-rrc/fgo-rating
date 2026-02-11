@@ -380,7 +380,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                 <div className="flex flex-col sm:flex-row gap-4 items-center">
                                     <span className="text-sm text-gray-600">Sync with Atlas Academy:</span>
                                     <div className="flex gap-2">
-                                        {['JP', 'EN', 'CN'].map(r => (
+                                        {['JP', 'CN', 'EN'].map(r => (
                                             <button
                                                 key={r}
                                                 onClick={() => handleAtlasSync(r)}
